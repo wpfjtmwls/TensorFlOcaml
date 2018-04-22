@@ -1,0 +1,12 @@
+
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+*.annot
+*.byte
+tings.json
