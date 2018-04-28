@@ -1,7 +1,3 @@
-open Graphstate
-
-module type Graph = sig 
-  
   (* type t is a type of Graph *)
   type t 
 
@@ -14,7 +10,19 @@ module type Graph = sig
   (* type node is a record with id and nodetype *)
   type node = {id: string; nodetype: nodetype}
 
-  (* ------------ Operation --------------- *)
+  (* ------------ Node Creation --------------- *)
+
+  (* [variable] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : int list representing matrix dimensions and a graph
+  * [outputs] : a new variable node with initial matrix depending on the matrix dimension and a graph where the new node was added
+  *)
+  val variable : int list -> t -> (node * t)
+
+  (* [placeholder] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : int list representing matrix dimensions and a graph
+  * [outputs] : a new placeholder node with initial matrix depending on the matrix dimension and a graph where the new node was added
+  *)
+  val placeholder : int list -> t -> (node * t)
 
   (* [matmul] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : two nodes and a graph 
@@ -40,28 +48,11 @@ module type Graph = sig
   *)
   val sigmoid : node -> t -> (node * t)
 
-  (* ------------ Node Creation --------------- *)
-
-  (* [create_variable] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
-  * [requires] : int list representing matrix dimensions and a graph
-  * [outputs] : a new variable node with initial matrix depending on the matrix dimension and a graph where the new node was added
-  *)
-  val create_variable : int list -> t -> (node * t)
-
-  (* [create_placeholder] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
-  * [requires] : int list representing matrix dimensions and a graph
-  * [outputs] : a new placeholder node with initial matrix depending on the matrix dimension and a graph where the new node was added
-  *)
-  val create_placeholder : int list -> t -> (node * t)
-
-
-  (* ------------ Optimizer Creation --------------- *)
-
-  (* [create_grad_descent] takes a node and a graph as inputs and outputs a new node and graph as a tuple
+  (* [grad_descent] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node  and a graph 
   * [outputs] : a new node with a specific optimizer and a graph where the new node was added
   *)
-  val create_grad_descent : node -> t -> (node * t)
+  val grad_descent : node -> t -> (node * t)
 
   (* ------------ Runners --------------- *)
 
@@ -69,12 +60,11 @@ module type Graph = sig
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : the resulting matrix from forward pass of previous nodes
   *)
-  val forward : node -> t -> Graphstate.st -> Arr.arr 
+  val forward : node -> t -> Graphstate.st -> string
 
   (* [backword] takes a node, a graph, and a graph state inputs (max_iters and delta are optional arguments) and outputs the resulting matrix
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : changed GraphState from backward pass into previous nodes and update the according mutable fields
   *)
-  val backward : node -> t -> st -> ?max_iters:int -> ?delta:int -> st
+  val backward : node -> t -> Graphstate.st -> ?max_iters:int -> ?delta:int -> Graphstate.st
 
-end

@@ -1,15 +1,13 @@
 open OUnit2
-open Graph
-open Owl
 
 (* OCaml allows {|...|} as a syntax for strings in which the ...
    can contain unescaped quotes.  This is super useful for
    constructing test cases, as shown below. *)
 
 let graph = Graph.empty
-let (A, graph) = graph |> Graph.create_variable (1, 1)
-let (x, graph) = graph |> Graph.create_placeholder(1,1)
-let (y, graph) = graph |> Graph.matmul A x
+let (a, graph) = graph |> Graph.create_variable [1;1]
+let (x, graph) = graph |> Graph.create_placeholder [1;1]
+let (y, graph) = graph |> Graph.matmul a x
 let graphstate = GraphState.(empty
                    |> add_placeholder x.id Mat.ones 1 1
                    |> add_variable A.id Mat.ones 1 1)           
