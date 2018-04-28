@@ -13,7 +13,7 @@ module GraphState = struct
   let empty = [] 
   
   let add_node id matrix state = match mem_assoc id state with
-    | true -> (id, matrix)::(remove assoc id state)
+    | true -> (id, matrix)::(remove_assoc id state)
     | false -> (id, matrix)::state
   
   let get_node id state = match mem_assoc id state with 
@@ -38,7 +38,7 @@ module GraphState = struct
           begin 
             if mem id acc then update_state t update_st acc
             else 
-            let new_update_st = (id, new_matrix)::(remove assoc id update_st) in
+            let new_update_st = (id, new_matrix)::(remove_assoc id update_st) in
             let new_acc = id::acc in
             update_state t new_update_st new_acc
           end
@@ -57,7 +57,6 @@ module GraphState = struct
       merge_graphstates_helper t new_update_st new_acc
   
   let merge_graphstates new_st_lst old_st = 
-    merge_graphstates_helper state_lst old_st []
+    merge_graphstates_helper new_st_lst old_st []
     
 end
-
