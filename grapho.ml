@@ -1,6 +1,7 @@
 open Owl
-open Graphstate
+open Graphst
 
+module Graph = struct
 type node_counts = {
   nVar: int;
   nPlaceholder: int; 
@@ -127,11 +128,9 @@ let rec forward n gr st =
     | MatMul n1 n2 ->
       let (a1, st1) = forward n1 st in
       let (a2, st2) = forward n2 st in
-      let ndims1 = Arr.num_dims a1 in
-      let ndims2 = Arr.num_dims a2 in
-      let ar =
-        Arr.mul a1 a2
-      in
+      (*let ndims1 = Arr.num_dims a1 in
+      let ndims2 = Arr.num_dims a2 in*)
+      let ar = Arr.mul a1 a2 in
       (ar, (merge_graphstates [st1; st2] |> add_node n.id ar))
     | Add n1 n2 ->
       let (a1, st1) = forward n1 st in
@@ -145,12 +144,14 @@ let rec forward n gr st =
       ar, (merge_graphstates [st1; st2] |> add_node n.id ar)
     | Sigmoid n1 ->
       let (a1, st1) = forward n1 st in
-      let (a2, st2) = forward n2 st in
-      let ar = Arr.mul a1 a2 in
-      ar, (merge_graphstates [st1; st2] |> add_node n.id ar))
+      let ar = Arr.sigmoid a1 in
+      ar, add_node n.id ar st1)
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
 
 let backward n gr st =
-  Graphstate.empty
+  GraphState.empty
 
-(* TODO validate dimensions of new nodes. Don't let anything add to optimizer. Keep in mind, matmul is 2-dimensional, batch ops add a dimension *)
+end
+
+(* TODO validate dimensions of new nodes. Don't let anything add to optimizer. Keep in mind, matmul is 2-dimensional, batch ops add a dimension,
+TODO batch operations *)

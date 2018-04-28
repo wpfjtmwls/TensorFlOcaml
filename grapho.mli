@@ -1,6 +1,8 @@
-  open Owl
-  
-  (* type t is a type of Graph *)
+open Owl
+open Graphst
+
+module Graph : sig
+(* type t is a type of Graph *)
   type t 
 
   (* type empty is empty type of Graph *)
@@ -68,5 +70,6 @@
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : changed GraphState from backward pass into previous nodes and update the according mutable fields
   *)
-  val backward : node -> t -> Graphstate.st -> Graphstate.st
+  val backward : node -> t -> GraphState.st -> GraphState.st
 
+end
