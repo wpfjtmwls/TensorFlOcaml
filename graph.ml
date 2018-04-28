@@ -119,18 +119,19 @@ let grad_descent n gr =
 
   (* ------------ Runners --------------- *)
 
-let forward n gr st =
-  (* match n with
-  | Placeholder dimens -> 
-  | Variable dimens -> 
-  | Operation o -> (match o with
-    | MatMul n1 n2 -> 
+let rec forward n gr st =
+  match n.nodetype with
+  | Placeholder _ | Variable _ -> st.get n.id, st
+  | Operation o ->
+  
+    (match o with
+    | MatMul n1 n2 -> arr.mul (forward n1 ) ()
     | Add n1 n2 -> 
     | SquareLoss n1 n2 -> 
     | Sigmoid n1 -> )
-  | Optimizer o -> (match o with
-    | GradDesc n1 -> ) *)
-  Arr.ones [|1|]
+  | Optimizer o -> failwith "Cannot call forward on an optimizer node"
 
 let backward n gr st =
   Graphstate.empty
+
+(* TODO validate dimensions of new nodes. Don't let anything add to optimizer *)
