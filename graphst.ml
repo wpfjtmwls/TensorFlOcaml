@@ -58,10 +58,11 @@ module GraphState = struct
     merge_graphstates_helper new_st_lst old_st [] *)
 
   let merge_graphstates (new_st_lst : st list) (old_st : st) =
-    (* Fold and accum (state, updated_ids) *)
-    fst (
+    (* Fold over list of new_st and accum (state, updated_ids) *)
+    let (updated_state, _) =
       List.fold_left (
         fun (acc_st, updated_id_lst) new_st ->
+          (* Fold over individual new_st and accum (state, updated_ids) *)
           List.fold_left (fun (acc_st, updated_id_lst) (id, mat) -> 
             if List.mem id updated_id_lst then (acc_st, updated_id_lst) else
             ((id, mat)::(List.remove_assoc id acc_st), id::updated_id_lst)
@@ -69,6 +70,6 @@ module GraphState = struct
           (acc_st, updated_id_lst) new_st
       )
       (old_st, []) new_st_lst
-    )
+    in updated_state
     
 end
