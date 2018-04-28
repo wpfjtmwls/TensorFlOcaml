@@ -1,5 +1,7 @@
 open Owl
+open Graphst
 
+module Graph = struct
 type node_counts = {
   nVar: int;
   nPlaceholder: int; 

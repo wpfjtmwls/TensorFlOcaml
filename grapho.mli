@@ -1,6 +1,8 @@
-  open Owl
-  
-  (* type t is a type of Graph *)
+open Owl
+open Graphst
+
+module Graph : sig
+(* type t is a type of Graph *)
   type t 
 
   (* type empty is empty type of Graph *)
@@ -62,11 +64,12 @@
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : the resulting matrix from forward pass of previous nodes
   *)
-  val forward : node -> t -> Graphstate.st -> Arr.arr
+  val forward : node -> t -> GraphState.st -> Arr.arr
 
   (* [backword] takes a node, a graph, and a graph state inputs (max_iters and delta are optional arguments) and outputs the resulting matrix
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : changed GraphState from backward pass into previous nodes and update the according mutable fields
   *)
-  val backward : node -> t -> Graphstate.st -> Graphstate.st
+  val backward : node -> t -> GraphState.st -> GraphState.st
 
+end
