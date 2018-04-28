@@ -1,4 +1,4 @@
-(* Graph state object *)
+(* Graph state object *) 
 type st
 type nodeid = string 
 val empty : st
