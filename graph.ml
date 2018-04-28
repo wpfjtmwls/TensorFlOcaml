@@ -125,7 +125,7 @@ let rec forward n gr st =
   | Operation o ->
   
     (match o with
-    | MatMul n1 n2 -> arr.mul (forward n1 ) ()
+    | MatMul n1 n2 -> Arr.mul (forward n1 ) ()
     | Add n1 n2 -> 
     | SquareLoss n1 n2 -> 
     | Sigmoid n1 -> )
