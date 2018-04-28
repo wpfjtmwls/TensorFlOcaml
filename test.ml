@@ -1,4 +1,4 @@
-open OUnit2
+(* open OUnit2
 open Graphst
 open Grapho
 open Owl
@@ -29,4 +29,4 @@ let make_tests t (result, in_str) out_str =
   >:: (fun _ -> assert_equal out_str ("result")))
 
 let _ = run_test_tt_main ("suite" >::: 
-  List.map (fun (t, i, o) -> make_tests t i o) tests)
+  List.map (fun (t, i, o) -> make_tests t i o) tests) *)
