@@ -13,7 +13,19 @@ module type Graph = sig
   (* type node is a record with id and nodetype *)
   type node = {id: string; nodetype: nodetype}
 
-  (* ------------ Operation --------------- *)
+  (* ------------ Node Creation --------------- *)
+
+  (* [variable] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : int list representing matrix dimensions and a graph
+  * [outputs] : a new variable node with initial matrix depending on the matrix dimension and a graph where the new node was added
+  *)
+  val variable : int list -> t -> (node * t)
+
+  (* [placeholder] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : int list representing matrix dimensions and a graph
+  * [outputs] : a new placeholder node with initial matrix depending on the matrix dimension and a graph where the new node was added
+  *)
+  val placeholder : int list -> t -> (node * t)
 
   (* [matmul] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : two nodes and a graph 
@@ -39,28 +51,11 @@ module type Graph = sig
   *)
   val sigmoid : node -> t -> (node * t)
 
-  (* ------------ Node Creation --------------- *)
-
-  (* [create_variable] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
-  * [requires] : int list representing matrix dimensions and a graph
-  * [outputs] : a new variable node with initial matrix depending on the matrix dimension and a graph where the new node was added
-  *)
-  val create_variable : int list -> t -> (node * t)
-
-  (* [create_placeholder] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
-  * [requires] : int list representing matrix dimensions and a graph
-  * [outputs] : a new placeholder node with initial matrix depending on the matrix dimension and a graph where the new node was added
-  *)
-  val create_placeholder : int list -> t -> (node * t)
-
-
-  (* ------------ Optimizer Creation --------------- *)
-
-  (* [create_grad_descent] takes a node and a graph as inputs and outputs a new node and graph as a tuple
+  (* [grad_descent] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node  and a graph 
   * [outputs] : a new node with a specific optimizer and a graph where the new node was added
   *)
-  val create_grad_descent : node -> t -> (node * t)
+  val grad_descent : node -> t -> (node * t)
 
   (* ------------ Runners --------------- *)
 
