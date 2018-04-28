@@ -11,6 +11,7 @@ type node_counts = {
   nSigmoid: int;
   nGradDesc: int;
   nT: int;
+  nMinus: int;
 }
 
 type dims = int list
@@ -18,6 +19,7 @@ type dims = int list
 type oper =
   | MatMul of (node * node)
   | Add of (node * node)
+  | Minus of (node * node)
   | SquareLoss of (node * node)
   | Sigmoid of node
   | T of node
@@ -35,14 +37,17 @@ and node = {id: string; nodetype: nodetype}
 
 type t = {nc: node_counts;}
 
-let empty ={nc= {nVar= 0;
-            nPlaceholder= 0;
-            nMatmul= 0;
-            nAdd= 0;
-            nSquareLoss= 0;
-            nSigmoid= 0;
-            nGradDesc= 0;
-            nT = 0;}}
+let empty ={nc = {
+              nVar = 0;
+              nPlaceholder = 0;
+              nMatmul = 0;
+              nAdd = 0;
+              nSquareLoss = 0;
+              nSigmoid = 0;
+              nGradDesc = 0;
+              nT = 0;
+              nMinus = 0;
+            }}
 
 (* ------------ Helper Functions --------------- *)
 
@@ -50,12 +55,15 @@ let empty ={nc= {nVar= 0;
 let to_string = function
   | Placeholder _ -> "PH"
   | Variable _ -> "VAR"
-  | Operation o -> (match o with
+  | Operation o -> begin
+    match o with
     | MatMul _ -> "MM"
     | Add _ -> "ADD"
     | SquareLoss _ -> "SL"
     | Sigmoid _ -> "SIG"
-    | T _ -> "T")
+    | T _ -> "T"
+    | Minus _ -> "MINUS"
+  end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
@@ -63,12 +71,15 @@ let to_string = function
 let get_node_count nc = function
 | Placeholder _ -> nc.nPlaceholder
   | Variable _ -> nc.nVar
-  | Operation o -> (match o with
+  | Operation o -> begin
+    match o with
     | MatMul _ -> nc.nMatmul
     | Add _ -> nc.nAdd
     | SquareLoss _ -> nc.nSquareLoss
     | Sigmoid _ -> nc.nSigmoid
-    | T _ -> nc.nT)
+    | T _ -> nc.nT
+    | Minud _ -> nc.nMinus
+  end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> nc.nGradDesc)
 
@@ -76,12 +87,15 @@ let get_node_count nc = function
 let incr_node_count nc = function
 | Placeholder _ -> {nc with nPlaceholder = nc.nPlaceholder + 1}
   | Variable _ -> {nc with nVar = nc.nVar + 1}
-  | Operation o -> (match o with
+  | Operation o -> begin
+    match o with
     | MatMul _ -> {nc with nMatmul = nc.nMatmul + 1}
     | Add _ -> {nc with nAdd = nc.nAdd + 1}
     | SquareLoss _ -> {nc with nSquareLoss = nc.nSquareLoss + 1}
     | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1}
-    | T _ -> {nc with nT = nc.nT + 1})
+    | T _ -> {nc with nT = nc.nT + 1}
+    | Minus _ -> {nc with nMinus = nc.nMinus + 1}
+  end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> {nc with nGradDesc = nc.nGradDesc + 1})
 
@@ -150,6 +164,11 @@ let rec forward n gr st =
       let (a2, st2) = forward n2 gr st in
       let ar = Arr.add a1 a2 in
       ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+    | Minus (n1, n2) ->
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
+      let ar = Arr.(a1 - a2) in
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | SquareLoss (n1, n2) -> 
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
@@ -186,6 +205,10 @@ let backward n gr st =
       | Add (a, b) ->
         let st1 = backprop_graddesc a (grad) lr st in
         let st2 = backprop_graddesc b (grad) lr st in
+        merge_graphstates [st1; st2] st
+      | Minus (a, b) ->
+        let st1 = backprop_graddesc a (grad) lr st in
+        let st2 = backprop_graddesc b (Arr.mul_scalar grad (-1.)) lr st in
         merge_graphstates [st1; st2] st
       | Sigmoid a ->
         let sig_val = st |> get_node node.id in
