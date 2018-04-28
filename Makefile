@@ -5,7 +5,7 @@ compile:
 	ocamlbuild -use-ocamlfind graphst.cmo grapho.cmo
 
 check:
-	bash checkenv.sh && bash checktypes.sh
+	bash checktypes.sh
 
 zip:
 	zip tensorflocaml.zip *.ml*
