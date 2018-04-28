@@ -1,8 +1,0 @@
-### Starting build.
-# Target: test.ml.depends, tags: { package(oUnit), package(str), extension:ml, file:test.ml, ocaml, ocamldep, quiet, traverse, use_menhir }
-ocamlfind ocamldep -package oUnit -package str -modules test.ml > test.ml.depends
-# Target: test.cmo, tags: { package(oUnit), package(str), byte, compile, extension:cmo, extension:ml, file:test.cmo, file:test.ml, implem, ocaml, quiet, traverse, use_menhir }
-ocamlfind ocamlc -c -package oUnit -package str -o test.cmo test.ml
-# Target: test.byte, tags: { package(oUnit), package(str), byte, dont_link_with, extension:byte, file:test.byte, link, ocaml, program, quiet, traverse, use_menhir }
-ocamlfind ocamlc -linkpkg -package oUnit -package str test.cmo -o test.byte
-# Compilation successful.
