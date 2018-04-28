@@ -5,7 +5,7 @@ module type GraphState = sig
   (* Placeholder for now. Eventually use owl matrix? *)
   type matrix
 
-  val empty : unit -> t
+  val empty : t
   
   val add_placeholder: nodeid -> matrix -> t
   
