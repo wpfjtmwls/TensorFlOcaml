@@ -1,6 +1,6 @@
 open OUnit2
-open Grapho
 open Graphst
+open Grapho
 open Owl
 
 
@@ -8,14 +8,14 @@ open Owl
    can contain unescaped quotes.  This is super useful for
    constructing test cases, as shown below. *)
 
-let graph = Graph.empty
-let (a, graph) = graph |> Graph.variable [1;1]
-let (x, graph) = graph |> Graph.placeholder [1;1]
-let (y, graph) = graph |> Graph.matmul a x
+let graph = Grapho.Graph.empty
+let (a, graph) = graph |> Grapho.Graph.variable [1;1]
+let (x, graph) = graph |> Grapho.Graph.placeholder [1;1]
+let (y, graph) = graph |> Grapho.Graph.matmul a x
 let graphstate = GraphState.(empty
                    |> add_placeholder x.id (Arr.ones [|1|])
                    |> add_variable A.id (Arr.ones [|1|]))           
-let easy_matmul = Graph.forward y graph graphstate
+let easy_matmul = Grapho.Graph.forward y graph graphstate
  
 let tests = [
   ("easy matmul", (easy_matmul, "A=[1],x=[1], Ax=1"), "1")
