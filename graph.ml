@@ -1,12 +1,13 @@
 open Owl
 
-type node_counts = {nVar: int;
-                    nPlaceholder: int; 
-                    nMatmul: int;
-                    nAdd: int;
-                    nSquareLoss: int;
-                    nSigmoid: int;
-                    nGradDesc: int;}
+type node_counts = {
+  nVar: int;
+  nPlaceholder: int; 
+  nMatmul: int;
+  nAdd: int;
+  nSquareLoss: int;
+  nSigmoid: int;
+  nGradDesc: int;}
 
 type dims = int list
 
@@ -25,12 +26,11 @@ and nodetype =
   | Operation of oper
   | Optimizer of optm
 
-(* type node is a record with id and nodetype *)
 and node = {id: string; nodetype: nodetype}
 
 type t = {nc: node_counts;}
 
-let empty ={nc = {nVar= 0;
+let empty ={nc= {nVar= 0;
             nPlaceholder= 0;
             nMatmul= 0;
             nAdd= 0;
@@ -38,6 +38,7 @@ let empty ={nc = {nVar= 0;
             nSigmoid= 0;
             nGradDesc= 0;}}
 
+(* ------------ Helper Functions --------------- *)
 
 (* Helper function. Converts nodetype to string. *)    
 let to_string = function
@@ -79,6 +80,7 @@ let incr_node_count nc = function
 let gen_id nt gr =
   to_string nt ^ "_" ^ string_of_int (get_node_count gr.nc nt), {nc= incr_node_count gr.nc nt}
 
+(* ------------ Node Creation --------------- *)
 
 let variable dims gr =
   let nodetype = Variable dims in
@@ -115,8 +117,20 @@ let grad_descent n gr =
   let (id, gr') = gen_id nodetype gr in
   ({id=id; nodetype=nodetype;}, gr')
 
+  (* ------------ Runners --------------- *)
+
 let forward n gr st =
-  Arr.zeros [|1|]
+  (* match n with
+  | Placeholder dimens -> 
+  | Variable dimens -> 
+  | Operation o -> (match o with
+    | MatMul n1 n2 -> 
+    | Add n1 n2 -> 
+    | SquareLoss n1 n2 -> 
+    | Sigmoid n1 -> )
+  | Optimizer o -> (match o with
+    | GradDesc n1 -> ) *)
+  Arr.ones [|1|]
 
 let backward n gr st =
   Graphstate.empty
