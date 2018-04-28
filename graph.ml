@@ -1,12 +1,13 @@
 module Graph = struct
 
-  type node_counts = {nVar: int;
-                      nPlaceholder: int; 
-                      nMatmul: int;
-                      nAdd: int;
-                      nSquareLoss: int;
-                      nSigmoid: int;
-                      nGradDesc: int;}
+  type node_counts = {
+    nVar: int;
+    nPlaceholder: int; 
+    nMatmul: int;
+    nAdd: int;
+    nSquareLoss: int;
+    nSigmoid: int;
+    nGradDesc: int;}
 
   type dims = int list
 
@@ -25,7 +26,6 @@ module Graph = struct
     | Operation of oper
     | Optimizer of optm
 
-  (* type node is a record with id and nodetype *)
   and node = {id: string; nodetype: nodetype}
 
   type t = {nc: node_counts;}
@@ -38,11 +38,12 @@ module Graph = struct
               nSigmoid= 0;
               nGradDesc= 0;}
 
+  (* ------------ Helper Functions --------------- *)
 
   (* Helper function. Converts nodetype to string. *)    
   let to_string = function
-    | Placeholder -> "PH"
-    | Variable -> "VAR"
+    | Placeholder _ -> "PH"
+    | Variable _ -> "VAR"
     | Operation o -> (match o with
       | MatMul _ -> "MM"
       | Add _ -> "Add"
@@ -53,8 +54,8 @@ module Graph = struct
 
   (* Helper function. Gets appropriate value from node_counts *)
   let get_node_count nc = function
-  | Placeholder -> nc.nPlaceholder
-    | Variable -> nc.nVar
+  | Placeholder _ -> nc.nPlaceholder
+    | Variable _ -> nc.nVar
     | Operation o -> (match o with
       | MatMul _ -> nc.nMatmul
       | Add _ -> nc.nAdd
@@ -65,8 +66,8 @@ module Graph = struct
 
   (* Helper function. Returns nc with the appropriate value incremented *)
   let incr_node_count nc = function
-  | Placeholder -> {nc with nPlaceholder = nc.nPlaceholder + 1}
-    | Variable -> {nc with nVar = nc.nVar + 1}
+  | Placeholder _ -> {nc with nPlaceholder = nc.nPlaceholder + 1}
+    | Variable _ -> {nc with nVar = nc.nVar + 1}
     | Operation o -> (match o with
       | MatMul _ -> {nc with nMatmul = nc.nMatmul + 1}
       | Add _ -> {nc with nAdd = nc.nAdd + 1}
@@ -79,6 +80,7 @@ module Graph = struct
   let gen_id nt gr =
     to_string nt ^ "_" ^ string_of_int (get_node_count gr.nc nt), {nc= incr_node_count gr.nc nt}
 
+  (* ------------ Node Creation --------------- *)
 
   let variable dims gr =
     let nodetype = Variable dims in
@@ -114,5 +116,19 @@ module Graph = struct
     let nodetype = Optimizer (GradDesc n) in
     let (id, gr') = gen_id nodetype gr in
     ({id=id; nodetype=nodetype;}, gr')
+
+    (* ------------ Runners --------------- *)
+
+  let forward n gr st =
+    match n with
+    | Placeholder dimens -> 
+    | Variable dimens -> 
+    | Operation o -> (match o with
+      | MatMul n1 n2 -> 
+      | Add n1 n2 -> 
+      | SquareLoss n1 n2 -> 
+      | Sigmoid n1 -> )
+    | Optimizer o -> (match o with
+      | GradDesc n1 -> )
 
 end
