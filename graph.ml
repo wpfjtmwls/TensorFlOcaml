@@ -1,4 +1,23 @@
-module Graph = struct
+module type Graph = sig
+    type t 
+    val empty : t
+    type nodetype
+    type node = {id: string; nodetype: nodetype}
+
+    val variable : int list -> t -> (node * t)
+    val placeholder : int list -> t -> (node * t)
+    val matmul : node -> node -> t -> (node * t)
+    val add : node -> node -> t -> (node * t)
+    val squared_loss : node -> node -> t -> (node * t)
+    val sigmoid : node -> t -> (node * t)
+    val grad_descent : node -> t -> (node * t)
+    val forward : node -> t -> unit -> string
+    val backward : node -> t -> unit -> ?max_iters:int -> ?delta:int -> unit
+  
+  end
+
+
+module Graph : Graph = struct
 
   type node_counts = {nVar: int;
                       nPlaceholder: int; 
@@ -28,7 +47,7 @@ module Graph = struct
   (* type node is a record with id and nodetype *)
   and node = {id: string; nodetype: nodetype}
 
-  type t = {nc: node_counts;}
+  type t = node_counts
 
   let empty ={nVar= 0;
               nPlaceholder= 0;
@@ -38,11 +57,16 @@ module Graph = struct
               nSigmoid= 0;
               nGradDesc= 0;}
 
+  let backward = 
+    failwith "Unimplemented"
+
+  let forward = 
+    failwith "Unimplemented"
 
   (* Helper function. Converts nodetype to string. *)    
   let to_string = function
-    | Placeholder -> "PH"
-    | Variable -> "VAR"
+    | Placeholder _ -> "PH"
+    | Variable _ -> "VAR"
     | Operation o -> (match o with
       | MatMul _ -> "MM"
       | Add _ -> "Add"
@@ -53,8 +77,8 @@ module Graph = struct
 
   (* Helper function. Gets appropriate value from node_counts *)
   let get_node_count nc = function
-  | Placeholder -> nc.nPlaceholder
-    | Variable -> nc.nVar
+  | Placeholder _ -> nc.nPlaceholder
+    | Variable _ -> nc.nVar
     | Operation o -> (match o with
       | MatMul _ -> nc.nMatmul
       | Add _ -> nc.nAdd
@@ -65,8 +89,8 @@ module Graph = struct
 
   (* Helper function. Returns nc with the appropriate value incremented *)
   let incr_node_count nc = function
-  | Placeholder -> {nc with nPlaceholder = nc.nPlaceholder + 1}
-    | Variable -> {nc with nVar = nc.nVar + 1}
+  | Placeholder _ -> {nc with nPlaceholder = nc.nPlaceholder + 1}
+    | Variable _ -> {nc with nVar = nc.nVar + 1}
     | Operation o -> (match o with
       | MatMul _ -> {nc with nMatmul = nc.nMatmul + 1}
       | Add _ -> {nc with nAdd = nc.nAdd + 1}
@@ -77,7 +101,8 @@ module Graph = struct
 
   (* Helper function. Converts nodetype and graph to id and new graph *)
   let gen_id nt gr =
-    to_string nt ^ "_" ^ string_of_int (get_node_count gr.nc nt), {nc= incr_node_count gr.nc nt}
+    failwith "Ahh"
+    (* to_string nt ^ "_" ^ string_of_int (get_node_count gr.nc nt), {nc= incr_node_count gr.nc nt} *)
 
 
   let variable dims gr =

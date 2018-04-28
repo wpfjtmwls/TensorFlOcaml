@@ -1,4 +1,7 @@
-  (* type t is a type of Graph *)
+open Graphst
+
+module type Graph = sig
+(* type t is a type of Graph *)
   type t 
 
   (* type empty is empty type of Graph *)
@@ -60,11 +63,12 @@
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : the resulting matrix from forward pass of previous nodes
   *)
-  val forward : node -> t -> Graphstate.st -> string
+  val forward : node -> t -> unit -> string
 
   (* [backword] takes a node, a graph, and a graph state inputs (max_iters and delta are optional arguments) and outputs the resulting matrix
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : changed GraphState from backward pass into previous nodes and update the according mutable fields
   *)
-  val backward : node -> t -> Graphstate.st -> ?max_iters:int -> ?delta:int -> Graphstate.st
+  val backward : node -> t -> unit -> ?max_iters:int -> ?delta:int -> unit
 
+end

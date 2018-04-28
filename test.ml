@@ -1,4 +1,5 @@
 open OUnit2
+open Graph
 
 (* OCaml allows {|...|} as a syntax for strings in which the ...
    can contain unescaped quotes.  This is super useful for
