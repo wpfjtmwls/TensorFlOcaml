@@ -1,0 +1,28 @@
+#directory "_build";;
+(* Imports *)
+#require "ANSITerminal";;
+#require "oUnit";;
+#require "owl";;
+#require "str";;
+#require "yojson";;
+
+(* Loads *)
+#load "graphst.cmo";;
+#load "grapho.cmo";;
+
+(* Styling *)
+#require "lambda-term";;
+let markup = [LTerm_text.B_fg (LTerm_style.red); LTerm_text.S "Zdz" ; LTerm_text.B_fg (LTerm_style.cyan); LTerm_text.S " # "] in
+let prompt = LTerm_text.eval markup in
+UTop.prompt := fst (React.S.create prompt);;
+
+
+(* UTop.prompt := fst (React.S.create LTerm_text.(eval [B_fg (LTerm_style.green); S "# "]) *)
+Sys.command "clear";;
+
+(* FOR A2 *)
+
+
+(* For Tensorflowcaml *)
+#use "graphst.ml"
+#use "grapho.ml"

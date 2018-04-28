@@ -20,13 +20,13 @@ type oper =
   | Sigmoid of node
 
 and optm = 
-  | GradDesc of node
+  | GradDesc of float
 
 and nodetype =
   | Placeholder of dims
   | Variable of dims
   | Operation of oper
-  | Optimizer of optm
+  | Optimizer of (optm * node)
 
 and node = {id: string; nodetype: nodetype}
 
@@ -51,7 +51,7 @@ let to_string = function
     | Add _ -> "ADD"
     | SquareLoss _ -> "SL"
     | Sigmoid _ -> "SIG")
-  | Optimizer o -> (match o with
+  | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
 (* Helper function. Gets appropriate value from node_counts *)
@@ -63,8 +63,8 @@ let get_node_count nc = function
     | Add _ -> nc.nAdd
     | SquareLoss _ -> nc.nSquareLoss
     | Sigmoid _ -> nc.nSigmoid)
-  | Optimizer o -> (match o with
-    | GradDesc _ -> nc.nGradDesc )
+  | Optimizer (o, _) -> (match o with
+    | GradDesc _ -> nc.nGradDesc)
 
 (* Helper function. Returns nc with the appropriate value incremented *)
 let incr_node_count nc = function
@@ -75,7 +75,7 @@ let incr_node_count nc = function
     | Add _ -> {nc with nAdd = nc.nAdd + 1}
     | SquareLoss _ -> {nc with nSquareLoss = nc.nSquareLoss + 1}
     | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1})
-  | Optimizer o -> (match o with
+  | Optimizer (o, _) -> (match o with
     | GradDesc _ -> {nc with nGradDesc = nc.nGradDesc + 1})
 
 (* Helper function. Converts nodetype and graph to id and new graph *)
@@ -115,7 +115,7 @@ let sigmoid n gr =
   ({id=id; nodetype=nodetype;}, gr')
 
 let grad_descent n gr =
-  let nodetype = Optimizer (GradDesc n) in
+  let nodetype = Optimizer (GradDesc(0.1), n) in (* TODO: change learning rate *)
   let (id, gr') = gen_id nodetype gr in
   ({id=id; nodetype=nodetype;}, gr')
 
@@ -148,11 +148,47 @@ let rec forward n gr st =
       ar, add_node n.id ar st1)
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
 
-let backward (n : node) (gr : t) (st1 : st) : st =
-  let open Graphst in 
-  GraphState.empty
+let backward n gr st =
+  (* Helper to backprop for gradient descent *)
+  let rec backprop_graddesc node grad lr st =
+    match node.nodetype with
+    | Placeholder _ -> st (* Placeholders do not update on backprop *)
+    | Variable _ -> 
+      let var_val = st |> get_node node.id in
+      let new_val = Arr.(var_val - (mul_scalar grad lr)) in
+      st |> add_node node.id new_val
+    | Operation op -> begin
+      match op with
+      | MatMul (a, b) ->
+        let b_val = st |> get_node b.id in
+        let a_val = st |> get_node a.id in
+        let st1 = backprop_graddesc a (Arr.mul grad b_val) lr st in
+        let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
+        merge_graphstates [st1; st2] st
+      | Add (a, b) ->
+        let st1 = backprop_graddesc a (grad) lr st in
+        let st2 = backprop_graddesc b (grad) lr st in
+        merge_graphstates [st1; st2] st
+      | Sigmoid a ->
+        let sig_val = st |> get_node node.id in
+        let a_val = st |> get_node a.id in
+        backprop_graddesc a (Arr.mul a_val sig_val) lr st
+      | SquareLoss (pred, truth) ->
+        let pred_val = st |> get_node pred.id in
+        let truth_val = st |> get_node truth.id in
+        backprop_graddesc pred Arr.(mul_scalar (pred_val - truth_val) 2.) lr st
+    end
+    | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
+  in
+  (* Run backward pass *)
+  match n.nodetype with
+  | Placeholder _ | Variable _ | Operation _ -> 
+    failwith "Unable to run backward iteration on non-optimizer node"
+  | Optimizer (opt, loss_node) -> begin
+    let (loss_val, st_after_run) = forward loss_node gr st in
+    match opt with
+    | GradDesc lr ->
+      backprop_graddesc loss_node (Arr.ones [|1|]) lr st_after_run
+  end
 
 end
-
-(* TODO validate dimensions of new nodes. Don't let anything add to optimizer. Keep in mind, matmul is 2-dimensional, batch ops add a dimension,
-TODO batch operations *)
