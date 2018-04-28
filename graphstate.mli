@@ -19,3 +19,10 @@ val add_node : nodeid -> Arr.arr -> st -> st
  * [returns] : corresponding matrix
  *)
 val get_node : nodeid -> st -> Arr.arr
+
+(* [merge_graphstates] merges the two graphstates accordingly
+ * [requires] : two graphsates to be merged and accumulator (which shouold be [] initially)
+ * [returns] : updated graphstate with successful merge
+ * [usage] : new_graphstate merge_graphstates = [state1; state2] []  
+ *)
+val merge_graphstates : st list -> nodeid list -> st
