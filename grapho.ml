@@ -125,7 +125,7 @@ let rec forward n gr st =
   match n.nodetype with
   | Placeholder _ | Variable _ -> get_node n.id st, st
   | Operation o -> (match o with
-    | MatMul n1 n2 ->
+    | MatMul (n1,n2) ->
       let (a1, st1) = forward n1 st in
       let (a2, st2) = forward n2 st in
       (*let ndims1 = Arr.num_dims a1 in
