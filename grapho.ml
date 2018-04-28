@@ -131,17 +131,17 @@ let rec forward n gr st =
       (*let ndims1 = Arr.num_dims a1 in
       let ndims2 = Arr.num_dims a2 in*)
       let ar = Arr.mul a1 a2 in
-      (ar, (merge_graphstates [st1; st2] |> add_node n.id ar))
+      (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
     | Add (n1, n2) ->
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
       let ar = Arr.add a1 a2 in
-      ar, (merge_graphstates [st1; st2] |> add_node n.id ar)
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | SquareLoss (n1, n2) -> 
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
       let ar = Arr.mul a1 a2 in
-      ar, (merge_graphstates [st1; st2] |> add_node n.id ar)
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | Sigmoid n1 ->
       let (a1, st1) = forward n1 gr st in
       let ar = Arr.sigmoid a1 in
