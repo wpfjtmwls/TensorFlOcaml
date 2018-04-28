@@ -12,6 +12,7 @@ type node_counts = {
   nGradDesc: int;
   nT: int;
   nMinus: int;
+  nPow: int;
 }
 
 type dims = int list
@@ -23,6 +24,7 @@ type oper =
   | SquareLoss of (node * node)
   | Sigmoid of node
   | T of node
+  | Pow of (node * float)
 
 and optm = 
   | GradDesc of float
@@ -47,6 +49,7 @@ let empty ={nc = {
               nGradDesc = 0;
               nT = 0;
               nMinus = 0;
+              nPow = 0;
             }}
 
 (* ------------ Helper Functions --------------- *)
@@ -63,6 +66,7 @@ let to_string = function
     | Sigmoid _ -> "SIG"
     | T _ -> "T"
     | Minus _ -> "MINUS"
+    | Pow _ -> "POW"
   end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
@@ -78,7 +82,8 @@ let get_node_count nc = function
     | SquareLoss _ -> nc.nSquareLoss
     | Sigmoid _ -> nc.nSigmoid
     | T _ -> nc.nT
-    | Minud _ -> nc.nMinus
+    | Minus _ -> nc.nMinus
+    | Pow _ -> nc.nPow
   end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> nc.nGradDesc)
@@ -95,6 +100,7 @@ let incr_node_count nc = function
     | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1}
     | T _ -> {nc with nT = nc.nT + 1}
     | Minus _ -> {nc with nMinus = nc.nMinus + 1}
+    | Pow _ -> {nc with nPow = nc.nPow + 1}
   end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> {nc with nGradDesc = nc.nGradDesc + 1})
@@ -150,6 +156,7 @@ let grad_descent n gr =
 let rec forward n gr st =
   match n.nodetype with
   | Placeholder _ | Variable _ -> get_node n.id st, st
+  | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
   | Operation o -> begin
     match o with
     | MatMul (n1,n2) ->
@@ -178,17 +185,21 @@ let rec forward n gr st =
       let (a1, st1) = forward n1 gr st in
       let ar = Arr.sigmoid a1 in
       ar, add_node n.id ar st1
-    | T n ->
-      let (a, st1) = forward n gr st in
-      let ar = Arr.transpose a in
+    | T a ->
+      let (a_val, st1) = forward a gr st in
+      let ar = Arr.transpose a_val in
+      ar, add_node n.id ar st
+    | Pow (a, p) ->
+      let (a_val, st1) = forward a gr st in
+      let ar = Arr.scalar_pow p a_val in
       ar, add_node n.id ar st
   end
-  | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
 
 let backward n gr st =
   (* Helper to backprop for gradient descent *)
   let rec backprop_graddesc node grad lr st =
     match node.nodetype with
+    | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
     | Placeholder _ -> st (* Placeholders do not update on backprop *)
     | Variable _ -> 
       let var_val = st |> get_node node.id in
@@ -220,8 +231,11 @@ let backward n gr st =
         backprop_graddesc pred Arr.(mul_scalar (pred_val - truth_val) 2.) lr st
       | T a ->
         backprop_graddesc a (Arr.transpose grad) lr st
+      | Pow (a, p) ->
+        let a_val = st |> get_node a.id in
+        let p_minus_1 = p -. 1. in
+        backprop_graddesc a Arr.(pow_scalar (mul_scalar a_val p) (p_minus_1)) lr st
     end
-    | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
   in
   (* Run backward pass *)
   match n.nodetype with
