@@ -1,4 +1,5 @@
 open Graphstate
+
 module type Graph = sig 
   
   (* type t is a type of Graph *)
@@ -68,12 +69,12 @@ module type Graph = sig
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : the resulting matrix from forward pass of previous nodes
   *)
-  val forward : node -> t -> Graphstate.t -> matrix 
+  val forward : node -> t -> Graphstate.st -> Arr.arr 
 
   (* [backword] takes a node, a graph, and a graph state inputs (max_iters and delta are optional arguments) and outputs the resulting matrix
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : changed GraphState from backward pass into previous nodes and update the according mutable fields
   *)
-  val backward : node -> t -> Graphstate.t -> ?max_iters:int -> ?delta:int -> Graphstate.t
+  val backward : node -> t -> st -> ?max_iters:int -> ?delta:int -> st
 
 end
