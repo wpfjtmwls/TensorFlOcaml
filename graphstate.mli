@@ -1,13 +1,10 @@
+open Owl
+
 (* Graph state object *)
-module type GraphState = sig 
+module type Graphstate = sig 
   type t 
   type nodeid = string 
-  (* Placeholder for now. Eventually use owl matrix? *)
-  type matrix
-
   val empty : t
-  
-  val add_placeholder: nodeid -> matrix -> t
-  
-  val add_variable : nodeid -> matrix -> t
+  val add_placeholder: nodeid -> Arr.arr -> t
+  val add_variable : nodeid -> Arr.arr -> t
 end
