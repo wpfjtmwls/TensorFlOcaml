@@ -52,6 +52,12 @@ module Graph : sig
   *)
   val sigmoid : node -> t -> (node * t)
 
+  (* [trans] takes a node and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : a node  and a graph 
+  * [outputs] : a new node that is the output of transpose of the input node and a graph where the new node was added
+  *)
+  val trans : node -> t -> (node * t)
+
   (* [grad_descent] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node  and a graph 
   * [outputs] : a new node with a specific optimizer and a graph where the new node was added

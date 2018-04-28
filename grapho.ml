@@ -9,7 +9,9 @@ type node_counts = {
   nAdd: int;
   nSquareLoss: int;
   nSigmoid: int;
-  nGradDesc: int;}
+  nGradDesc: int;
+  nT: int;
+}
 
 type dims = int list
 
@@ -18,6 +20,7 @@ type oper =
   | Add of (node * node)
   | SquareLoss of (node * node)
   | Sigmoid of node
+  | T of node
 
 and optm = 
   | GradDesc of float
@@ -38,7 +41,8 @@ let empty ={nc= {nVar= 0;
             nAdd= 0;
             nSquareLoss= 0;
             nSigmoid= 0;
-            nGradDesc= 0;}}
+            nGradDesc= 0;
+            nT = 0;}}
 
 (* ------------ Helper Functions --------------- *)
 
@@ -50,7 +54,8 @@ let to_string = function
     | MatMul _ -> "MM"
     | Add _ -> "ADD"
     | SquareLoss _ -> "SL"
-    | Sigmoid _ -> "SIG")
+    | Sigmoid _ -> "SIG"
+    | T _ -> "T")
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
@@ -62,7 +67,8 @@ let get_node_count nc = function
     | MatMul _ -> nc.nMatmul
     | Add _ -> nc.nAdd
     | SquareLoss _ -> nc.nSquareLoss
-    | Sigmoid _ -> nc.nSigmoid)
+    | Sigmoid _ -> nc.nSigmoid
+    | T _ -> nc.nT)
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> nc.nGradDesc)
 
@@ -74,7 +80,8 @@ let incr_node_count nc = function
     | MatMul _ -> {nc with nMatmul = nc.nMatmul + 1}
     | Add _ -> {nc with nAdd = nc.nAdd + 1}
     | SquareLoss _ -> {nc with nSquareLoss = nc.nSquareLoss + 1}
-    | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1})
+    | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1}
+    | T _ -> {nc with nT = nc.nT + 1})
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> {nc with nGradDesc = nc.nGradDesc + 1})
 
@@ -114,6 +121,11 @@ let sigmoid n gr =
   let (id, gr') = gen_id nodetype gr in
   ({id=id; nodetype=nodetype;}, gr')
 
+let trans n gr =
+  let nodetype = Operation (T n) in
+  let (id, gr') = gen_id nodetype gr in
+  ({id=id; nodetype=nodetype;}, gr')
+
 let grad_descent n gr =
   let nodetype = Optimizer (GradDesc(0.1), n) in (* TODO: change learning rate *)
   let (id, gr') = gen_id nodetype gr in
@@ -124,13 +136,14 @@ let grad_descent n gr =
 let rec forward n gr st =
   match n.nodetype with
   | Placeholder _ | Variable _ -> get_node n.id st, st
-  | Operation o -> (match o with
+  | Operation o -> begin
+    match o with
     | MatMul (n1,n2) ->
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
       (*let ndims1 = Arr.num_dims a1 in
       let ndims2 = Arr.num_dims a2 in*)
-      let ar = Arr.mul a1 a2 in
+      let ar = Arr.dot a1 a2 in
       (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
     | Add (n1, n2) ->
       let (a1, st1) = forward n1 gr st in
@@ -140,12 +153,17 @@ let rec forward n gr st =
     | SquareLoss (n1, n2) -> 
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      let ar = Arr.mul a1 a2 in
+      let ar = Arr.(pow_scalar (a1 - a2) 2.) in
       ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | Sigmoid n1 ->
       let (a1, st1) = forward n1 gr st in
       let ar = Arr.sigmoid a1 in
-      ar, add_node n.id ar st1)
+      ar, add_node n.id ar st1
+    | T n ->
+      let (a, st1) = forward n gr st in
+      let ar = Arr.transpose a in
+      ar, add_node n.id ar st
+  end
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
 
 let backward n gr st =
@@ -177,6 +195,8 @@ let backward n gr st =
         let pred_val = st |> get_node pred.id in
         let truth_val = st |> get_node truth.id in
         backprop_graddesc pred Arr.(mul_scalar (pred_val - truth_val) 2.) lr st
+      | T a ->
+        backprop_graddesc a (Arr.transpose grad) lr st
     end
     | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
   in
