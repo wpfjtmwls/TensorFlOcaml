@@ -20,15 +20,13 @@ module GraphState = struct
     | true -> assoc id state
     | false -> failwith "Exception : No such node id exists in Graph State"
   
-  (* [update_state] updates the old state with new state 
+  (* (* [update_state] updates the old state with new state 
    * [requires] : new state, old state, and ids that have been updated
    * [returns] : (updated state, updated ids) as a tuple
    *)
   let rec update_state new_st update_st acc = match new_st with
     | [] -> (update_st, acc)
-    | tup::t -> 
-      let id = fst tup in 
-      let new_matrix = snd tup in
+    | (id, new_matrix)::t -> 
       begin match assoc_opt id update_st with 
       | None -> failwith "Exception : New Graph states lost a mapping"
       | Some old_matrix -> 
@@ -57,6 +55,20 @@ module GraphState = struct
       merge_graphstates_helper t new_update_st new_acc
   
   let merge_graphstates new_st_lst old_st = 
-    merge_graphstates_helper new_st_lst old_st []
+    merge_graphstates_helper new_st_lst old_st [] *)
+
+  let merge_graphstates (new_st_lst : st list) (old_st : st) =
+    (* Fold and accum (state, updated_ids) *)
+    fst (
+      List.fold_left (
+        fun (acc_st, updated_id_lst) new_st ->
+          List.fold_left (fun (acc_st, updated_id_lst) (id, mat) -> 
+            if List.mem id updated_id_lst then (acc_st, updated_id_lst) else
+            ((id, mat)::(List.remove_assoc id acc_st), id::updated_id_lst)
+          )
+          (acc_st, updated_id_lst) new_st
+      )
+      (old_st, []) new_st_lst
+    )
     
 end
