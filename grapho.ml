@@ -121,20 +121,37 @@ let grad_descent n gr =
 
   (* ------------ Runners --------------- *)
 
-let forward n gr st =
-  (* match n with
-  | Placeholder dimens -> 
-  | Variable dimens -> 
+let rec forward n gr st =
+  match n.nodetype with
+  | Placeholder _ | Variable _ -> get_node n.id st, st
   | Operation o -> (match o with
-    | MatMul n1 n2 -> 
-    | Add n1 n2 -> 
+    | MatMul n1 n2 ->
+      let (a1, st1) = forward n1 st in
+      let (a2, st2) = forward n2 st in
+      (*let ndims1 = Arr.num_dims a1 in
+      let ndims2 = Arr.num_dims a2 in*)
+      let ar = Arr.mul a1 a2 in
+      (ar, (merge_graphstates [st1; st2] |> add_node n.id ar))
+    | Add n1 n2 ->
+      let (a1, st1) = forward n1 st in
+      let (a2, st2) = forward n2 st in
+      let ar = Arr.add a1 a2 in
+      ar, (merge_graphstates [st1; st2] |> add_node n.id ar)
     | SquareLoss n1 n2 -> 
-    | Sigmoid n1 -> )
-  | Optimizer o -> (match o with
-    | GradDesc n1 -> ) *)
-  Arr.ones [|1|]
+      let (a1, st1) = forward n1 st in
+      let (a2, st2) = forward n2 st in
+      let ar = Arr.mul a1 a2 in
+      ar, (merge_graphstates [st1; st2] |> add_node n.id ar)
+    | Sigmoid n1 ->
+      let (a1, st1) = forward n1 st in
+      let ar = Arr.sigmoid a1 in
+      ar, add_node n.id ar st1)
+  | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
 
 let backward n gr st =
   GraphState.empty
 
 end
+
+(* TODO validate dimensions of new nodes. Don't let anything add to optimizer. Keep in mind, matmul is 2-dimensional, batch ops add a dimension,
+TODO batch operations *)

@@ -62,9 +62,9 @@ module Graph : sig
 
   (* [forward] takes a node, a graph, and a graph state inputs and outputs the resulting matrix
   * [requires] : a node, a graph, and a graph state 
-  * [outputs] : the resulting matrix from forward pass of previous nodes
+  * [outputs] : the resulting matrix from forward pass of previous nodes and the new graphstate
   *)
-  val forward : node -> t -> GraphState.st -> Arr.arr
+  val forward : node -> t -> Graphstate.st -> Arr.arr * Graphstate.st
 
   (* [backword] takes a node, a graph, and a graph state inputs (max_iters and delta are optional arguments) and outputs the resulting matrix
   * [requires] : a node, a graph, and a graph state 
