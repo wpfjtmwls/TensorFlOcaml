@@ -1,5 +1,5 @@
 open Owl
-open Graphst
+open Graphst.GraphState
 
 module Graph = struct
 type node_counts = {
@@ -48,7 +48,7 @@ let to_string = function
   | Variable _ -> "VAR"
   | Operation o -> (match o with
     | MatMul _ -> "MM"
-    | Add _ -> "Add"
+    | Add _ -> "ADD"
     | SquareLoss _ -> "SL"
     | Sigmoid _ -> "SIG")
   | Optimizer (o, _) -> (match o with
@@ -63,8 +63,13 @@ let get_node_count nc = function
     | Add _ -> nc.nAdd
     | SquareLoss _ -> nc.nSquareLoss
     | Sigmoid _ -> nc.nSigmoid)
+<<<<<<< HEAD
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> nc.nGradDesc)
+=======
+  | Optimizer o -> (match o with
+    | GradDesc _ -> nc.nGradDesc )
+>>>>>>> ebf6239ccef27acc39848e571d46f3810ce855b8
 
 (* Helper function. Returns nc with the appropriate value incremented *)
 let incr_node_count nc = function
@@ -126,28 +131,29 @@ let rec forward n gr st =
   | Placeholder _ | Variable _ -> get_node n.id st, st
   | Operation o -> (match o with
     | MatMul (n1,n2) ->
-      let (a1, st1) = forward n1 st in
-      let (a2, st2) = forward n2 st in
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
       (*let ndims1 = Arr.num_dims a1 in
       let ndims2 = Arr.num_dims a2 in*)
       let ar = Arr.mul a1 a2 in
-      (ar, (merge_graphstates [st1; st2] |> add_node n.id ar))
-    | Add n1 n2 ->
-      let (a1, st1) = forward n1 st in
-      let (a2, st2) = forward n2 st in
+      (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
+    | Add (n1, n2) ->
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
       let ar = Arr.add a1 a2 in
-      ar, (merge_graphstates [st1; st2] |> add_node n.id ar)
-    | SquareLoss n1 n2 -> 
-      let (a1, st1) = forward n1 st in
-      let (a2, st2) = forward n2 st in
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+    | SquareLoss (n1, n2) -> 
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
       let ar = Arr.mul a1 a2 in
-      ar, (merge_graphstates [st1; st2] |> add_node n.id ar)
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | Sigmoid n1 ->
-      let (a1, st1) = forward n1 st in
+      let (a1, st1) = forward n1 gr st in
       let ar = Arr.sigmoid a1 in
       ar, add_node n.id ar st1)
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
 
+<<<<<<< HEAD
 let backward n gr st =
   (* Helper to backprop for gradient descent *)
   let rec backprop_graddesc node grad lr st =
@@ -187,3 +193,13 @@ let backward n gr st =
     | GradDesc lr ->
       backprop_graddesc loss_node lr st_after_run
   end
+=======
+let backward (n : node) (gr : t) (st1 : st) : st =
+  let open Graphst in 
+  GraphState.empty
+
+end
+
+(* TODO validate dimensions of new nodes. Don't let anything add to optimizer. Keep in mind, matmul is 2-dimensional, batch ops add a dimension,
+TODO batch operations *)
+>>>>>>> ebf6239ccef27acc39848e571d46f3810ce855b8
