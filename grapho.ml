@@ -141,7 +141,7 @@ let backward n gr st =
     | Placeholder _ -> st (* Placeholders do not update on backprop *)
     | Variable _ -> 
       let var_val = st |> Graphstate.get_node node.id in
-      let new_val = var_val - (lr) .* grad in
+      let new_val = var_val - Arr.(lr * grad) in
       st |> Graphstate.add_node node.id new_val
     | Operation op -> begin
       match op with
@@ -158,7 +158,8 @@ let backward n gr st =
       | Sigmoid a ->
         let sig_val = st |> Graphstate.get_node node.id in
         backprop_graddesc a (Arr.mul a dsig_dl) lr st
-      | SquareLoss (a, b) ->
+      | SquareLoss (pred, truth) ->
+        backprop_graddesc pred (2 * Arr.(pred - truth)) lr st
     end
     | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
   in
