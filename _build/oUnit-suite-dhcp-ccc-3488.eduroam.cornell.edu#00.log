@@ -1,0 +1,165 @@
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Runner: processes
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Chooser: simple
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration suite_name = "suite"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration cache_filename = "/Users/jaychia/Desktop/Homework/Senior/CS3110/TensorFlOcaml/_build/oUnit-$(suite_name).cache"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration display = "true"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration results_style_1_X = "false"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration verbose = "false"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration health_check_interval = "1."
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration testdata_dir = "none"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration chooser = "simple"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration output_html_dir = "none"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration processes_kill_period = "5."
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration runner = "processes"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration shards = "2"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration processes_grace_period = "5."
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration log_encoding = "utf-8"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration output_junit_file = "none"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Configuration output_file = "/Users/jaychia/Desktop/Homework/Senior/CS3110/TensorFlOcaml/_build/oUnit-$(suite_name)-$(shard_id).log"
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Using 2 workers maximum.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Starting worker number dhcp-ccc-3488.eduroam.cornell.edu#01.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Worker dhcp-ccc-3488.eduroam.cornell.edu#01 started.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Still 1 tests running : suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 1 tests running: suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: Start test suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Still 1 tests running : suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 1 tests running: suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: Test suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E:  has failed.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: not equal in test suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: Called from unknown location
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Still 1 tests running : suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 1 tests running: suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: End test suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#01 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Still 1 tests running : suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 1 tests running: suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: 0 tests running: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Worker dhcp-ccc-3488.eduroam.cornell.edu#01 has ended.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Used 1 worker during test execution.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Run 1 tests with shard dhcp-ccc-3488.eduroam.cornell.edu#01.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: ==============
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Summary:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: Test suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E:  has failed.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: not equal in test suite:0:
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: ########################### test-name ##################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E:     input========= EVALUATED TO ======>input   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E:    EXPECTED OUTPUT = expected output   
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: #####################################################################
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: .
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: Called from unknown location
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 E: 
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Ran: 1 tests in: 0.11 seconds.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Cases: 1.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Tried: 1.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Errors: 0.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Failures: 1.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Skip: 0.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Todo: 0.
+2018-04-28T00:51:05+00:00 dhcp-ccc-3488.eduroam.cornell.edu#00 I: Timeout: 0.

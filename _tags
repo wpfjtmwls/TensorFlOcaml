@@ -1,0 +1,2 @@
+true: use_menhir, package(oUnit), package(str)
+<repl.*>: package(react), package(lwt), package(lambda-term)
