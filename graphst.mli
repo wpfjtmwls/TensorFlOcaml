@@ -1,7 +1,7 @@
 open Owl
 
 (* Graph state object *)
-module type GraphState = sig 
+module GraphState : sig 
   type st
   type nodeid = string 
   val empty : st
