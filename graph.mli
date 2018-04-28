@@ -1,5 +1,6 @@
-open Graphstate
+open GraphState
 module type Graph = sig 
+  
   (* type t is a type of Graph *)
   type t 
 
