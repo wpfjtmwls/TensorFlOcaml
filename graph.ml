@@ -18,13 +18,13 @@ type oper =
   | Sigmoid of node
 
 and optm = 
-  | GradDesc of node
+  | GradDesc of float
 
 and nodetype =
   | Placeholder of dims
   | Variable of dims
   | Operation of oper
-  | Optimizer of optm
+  | Optimizer of (optm * node)
 
 and node = {id: string; nodetype: nodetype}
 
@@ -49,7 +49,7 @@ let to_string = function
     | Add _ -> "Add"
     | SquareLoss _ -> "SL"
     | Sigmoid _ -> "SIG")
-  | Optimizer o -> (match o with
+  | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
 (* Helper function. Gets appropriate value from node_counts *)
@@ -61,7 +61,7 @@ let get_node_count nc = function
     | Add _ -> nc.nAdd
     | SquareLoss _ -> nc.nSquareLoss
     | Sigmoid _ -> nc.nSigmoid)
-  | Optimizer o -> (match o with
+  | Optimizer (o, _) -> (match o with
     | GradDesc _ -> nc.nGradDesc)
 
 (* Helper function. Returns nc with the appropriate value incremented *)
@@ -73,7 +73,7 @@ let incr_node_count nc = function
     | Add _ -> {nc with nAdd = nc.nAdd + 1}
     | SquareLoss _ -> {nc with nSquareLoss = nc.nSquareLoss + 1}
     | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1})
-  | Optimizer o -> (match o with
+  | Optimizer (o, _) -> (match o with
     | GradDesc _ -> {nc with nGradDesc = nc.nGradDesc + 1})
 
 (* Helper function. Converts nodetype and graph to id and new graph *)
@@ -113,7 +113,7 @@ let sigmoid n gr =
   ({id=id; nodetype=nodetype;}, gr')
 
 let grad_descent n gr =
-  let nodetype = Optimizer (GradDesc n) in
+  let nodetype = Optimizer (GradDesc(0.1), n) in (* TODO: change learning rate *)
   let (id, gr') = gen_id nodetype gr in
   ({id=id; nodetype=nodetype;}, gr')
 
@@ -133,4 +133,40 @@ let forward n gr st =
   Arr.ones [|1|]
 
 let backward n gr st =
-  Graphstate.empty
+  (* Helper to backprop for gradient descent *)
+  let rec backprop_graddesc node grad lr st =
+    match node.nodetype with
+    | Placeholder _ -> st (* Placeholders do not update on backprop *)
+    | Variable _ -> 
+      let var_val = st |> Graphstate.get_node node.id in
+      let new_val = var_val - (lr) .* grad in
+      st |> Graphstate.add_node node.id new_val
+    | Operation op -> begin
+      match op with
+      | MatMul (a, b) ->
+        let b_val = st |> Graphstate.get_node b.id in
+        let a_val = st |> Graphstate.get_node a.id in
+        let st1 = backprop_graddesc a (Arr.mul grad b_val) lr st in
+        let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
+        Graphstate.merge st [st1; st2]
+      | Add (a, b) ->
+        let st1 = backprop_graddesc a (grad) lr st in
+        let st2 = backprop_graddesc b (grad) lr st in
+        Graphstate.merge st [st1; st2]
+      | Sigmoid a ->
+        let sig_val = st |> Graphstate.get_node node.id in
+        backprop_graddesc a (Arr.mul a dsig_dl) lr st
+      | SquareLoss (a, b) ->
+    end
+    | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
+  in
+  (* Run backward pass *)
+  match n with
+  | Placeholder _ | Variable _ | Operation _ -> 
+    failwith "Unable to run backward iteration on non-optimizer node"
+  | Optimizer (opt, loss_node) -> begin
+    let (st_after_run, loss_val) = forward loss_node gr st in
+    match opt with
+    | GradDesc lr ->
+      backprop_graddesc loss_node lr st_after_run
+  end
