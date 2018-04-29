@@ -3,4 +3,4 @@ PKG oUnit
 PKG lwt
 PKG react
 PKG lambda-term
-PKG Owl
+PKG owl

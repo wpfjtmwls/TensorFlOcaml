@@ -30,12 +30,12 @@ and optm =
   | GradDesc of float
 
 and nodetype =
-  | Placeholder of dims
-  | Variable of dims
+  | Placeholder
+  | Variable
   | Operation of oper
   | Optimizer of (optm * node)
 
-and node = {id: string; nodetype: nodetype}
+and node = {id: string; nodetype: nodetype; size: dims;}
 
 type t = {nc: node_counts;}
 
@@ -54,16 +54,21 @@ let empty ={nc = {
 
 (* ------------ Helper Functions --------------- *)
 
+(* Helper function. Convert dimension to string *)
+let string_of_dims dims =
+  let s = List.fold_left (fun ac el -> ac ^ " " ^ (string_of_int el)) "" dims in
+  String.sub s 1 (String.length s - 1)
+
 (* Helper function. Converts nodetype to string. *)    
 let to_string = function
-  | Placeholder _ -> "PH"
-  | Variable _ -> "VAR"
+  | Placeholder -> "PH"
+  | Variable -> "VAR"
   | Operation o -> begin
     match o with
     | MatMul _ -> "MM"
     | Add _ -> "ADD"
     | SquareLoss _ -> "SL"
-    | Sigmoid _ -> "SIG"
+    | Sigmoid _ -> "SIGM"
     | T _ -> "T"
     | Minus _ -> "MINUS"
     | Pow _ -> "POW"
@@ -73,8 +78,8 @@ let to_string = function
 
 (* Helper function. Gets appropriate value from node_counts *)
 let get_node_count nc = function
-| Placeholder _ -> nc.nPlaceholder
-  | Variable _ -> nc.nVar
+  | Placeholder -> nc.nPlaceholder
+  | Variable -> nc.nVar
   | Operation o -> begin
     match o with
     | MatMul _ -> nc.nMatmul
@@ -90,8 +95,8 @@ let get_node_count nc = function
 
 (* Helper function. Returns nc with the appropriate value incremented *)
 let incr_node_count nc = function
-| Placeholder _ -> {nc with nPlaceholder = nc.nPlaceholder + 1}
-  | Variable _ -> {nc with nVar = nc.nVar + 1}
+  | Placeholder -> {nc with nPlaceholder = nc.nPlaceholder + 1}
+  | Variable  -> {nc with nVar = nc.nVar + 1}
   | Operation o -> begin
     match o with
     | MatMul _ -> {nc with nMatmul = nc.nMatmul + 1}
@@ -109,61 +114,127 @@ let incr_node_count nc = function
 let gen_id nt gr =
   to_string nt ^ "_" ^ string_of_int (get_node_count gr.nc nt), {nc= incr_node_count gr.nc nt}
 
+(* Helper function. Returns true iff a nodetype in nodetypes is an optimizer *)
+let contains_optimizer nodetypes =
+  let is_opt nt =
+    match nt with
+    | Optimizer _ -> true
+    | _ -> false in
+  List.exists is_opt nodetypes
+
 (* ------------ Node Creation --------------- *)
 
 let variable dims gr =
-  let nodetype = Variable dims in
+  let nodetype = Variable in
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  ({id=id; nodetype=nodetype; size=dims}, gr')
 
 let placeholder dims gr =
-  let nodetype = Placeholder dims in
+  let nodetype = Placeholder in
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  ({id=id; nodetype=nodetype; size=dims}, gr')
 
 let matmul n1 n2 gr =
+  if contains_optimizer [n1.nodetype; n2.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
   let nodetype = Operation (MatMul (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  let size = begin
+    if List.length n1.size = 2 && List.length n2.size = 2
+    then [List.hd n1.size; List.nth n2.size 1]
+    else failwith "Invalid dimensions"
+  end in
+  ({id=id; nodetype=nodetype; size=size}, gr')
 
 let add n1 n2 gr =
+  if contains_optimizer [n1.nodetype; n2.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
   let nodetype = Operation (Add (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  let size = begin
+    if List.length n1.size = List.length n2.size
+    then n1.size
+    else failwith "Invalid dimensions"
+  end in
+  ({id=id; nodetype=nodetype; size=size}, gr')
 
 let squared_loss n1 n2 gr =
+  if contains_optimizer [n1.nodetype; n2.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
   let nodetype = Operation (SquareLoss (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  let size = begin
+    if List.length n1.size = List.length n2.size
+    then n1.size
+    else failwith "Invalid dimensions"
+  end in
+  ({id=id; nodetype=nodetype; size=size}, gr')
 
 let sigmoid n gr =
+  if contains_optimizer [n.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
   let nodetype = Operation (Sigmoid n) in
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  ({id=id; nodetype=nodetype; size=n.size}, gr')
 
 let trans n gr =
+  if contains_optimizer [n.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
   let nodetype = Operation (T n) in
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  let size = begin
+    if List.length n.size = 2
+    then List.rev n.size
+    else failwith "Invalid dimensions"
+  end in
+  ({id=id; nodetype=nodetype; size=size}, gr')
+
+let minus n1 n2 gr =
+  if contains_optimizer [n1.nodetype; n2.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
+  let nodetype = Operation (Minus (n1, n2)) in
+  let (id, gr') = gen_id nodetype gr in
+  let size = begin
+    if List.length n1.size = List.length n2.size
+    then n1.size
+    else failwith "Invalid dimensions"
+  end in
+  ({id=id; nodetype=nodetype; size=size}, gr')
+
+let pow n1 power gr =
+  if contains_optimizer [n1.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
+  let nodetype = Operation (Pow (n1, power)) in
+  let (id, gr') = gen_id nodetype gr in
+  let size = n1.size in
+  ({id=id; nodetype=nodetype; size=size}, gr')
 
 let grad_descent n gr =
+  if contains_optimizer [n.nodetype]
+  then failwith "Cannot add node to optimizer"
+  else
   let nodetype = Optimizer (GradDesc(0.1), n) in (* TODO: change learning rate *)
   let (id, gr') = gen_id nodetype gr in
-  ({id=id; nodetype=nodetype;}, gr')
+  ({id=id; nodetype=nodetype; size=[]}, gr')
 
   (* ------------ Runners --------------- *)
 
 let rec forward n gr st =
   match n.nodetype with
-  | Placeholder _ | Variable _ -> get_node n.id st, st
+  | Placeholder | Variable -> get_node n.id st, st
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
   | Operation o -> begin
     match o with
     | MatMul (n1,n2) ->
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      (*let ndims1 = Arr.num_dims a1 in
-      let ndims2 = Arr.num_dims a2 in*)
       (* let _ = Printf.printf "Running Matmul on %s matmul %s = %s\n" n1.id n2.id n.id; in *)
       let ar = Arr.dot a1 a2 in
       (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
@@ -205,10 +276,11 @@ let rec forward n gr st =
 let backward n gr st =
   (* Helper to backprop for gradient descent *)
   let rec backprop_graddesc node grad lr st =
+    let _ = Printf.printf "--Backprop-- %s\n" node.id; in
     match node.nodetype with
     | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
-    | Placeholder _ -> st (* Placeholders do not update on backprop *)
-    | Variable _ -> 
+    | Placeholder -> st (* Placeholders do not update on backprop *)
+    | Variable -> 
       let var_val = st |> get_node node.id in
       let new_val = Arr.(var_val - (mul_scalar grad lr)) in
       st |> add_node node.id new_val
@@ -217,7 +289,8 @@ let backward n gr st =
       | MatMul (a, b) ->
         let b_val = st |> get_node b.id in
         let a_val = st |> get_node a.id in
-        let _ = Printf.printf "Running Backprop on Matmul %s matmul %s = %s\n" a.id b.id n.id; in
+        let _ = Printf.printf "Running Backprop on Matmul:  %s matmul %s = %s\n" a.id b.id node.id; in
+        let _ = Printf.printf "%s | %s | %s\n" (string_of_dims a.size) (string_of_dims b.size) (string_of_dims node.size); in
         let st1 = backprop_graddesc a (Arr.mul grad b_val) lr st in
         let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
         merge_graphstates [st1; st2] st
@@ -247,7 +320,7 @@ let backward n gr st =
   in
   (* Run backward pass *)
   match n.nodetype with
-  | Placeholder _ | Variable _ | Operation _ -> 
+  | Placeholder | Variable | Operation _ -> 
     failwith "Unable to run backward iteration on non-optimizer node"
   | Optimizer (opt, loss_node) -> begin
     let (loss_val, st_after_run) = forward loss_node gr st in

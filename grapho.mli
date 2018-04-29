@@ -11,8 +11,10 @@ module Graph : sig
   (* type nodetype is a type of node eg Placeholder, Variable, Operation, Optimizer *)
   type nodetype
 
+  type dims = int list
+
   (* type node is a record with id and nodetype *)
-  type node = {id: string; nodetype: nodetype}
+  type node = {id: string; nodetype: nodetype; size: dims;}
 
   (* ------------ Node Creation --------------- *)
 
