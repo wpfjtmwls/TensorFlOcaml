@@ -6,11 +6,12 @@ module GraphState = struct
   (* [nodeid] type is the naming convention for nodes *)
   type nodeid = string 
   
-  (* [Graphstate.st] is a mapping from nodeid to the corresponding owl matrix *)
+  (* [Graphstate.st] is a mapping from nodeid to the corresponding owl matrix.
+   * RI: for any node n, if n is mapped to Arr.arr a, then n.dims matches a.shape *)
   type st = (nodeid * Arr.arr) list 
   
   (* [Empty] is an empty mapping *)
-  let empty = [] 
+  let empty = []
   
   let add_node id matrix state = match mem_assoc id state with
     | true -> (id, matrix)::(remove_assoc id state)

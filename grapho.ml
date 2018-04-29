@@ -146,7 +146,7 @@ let matmul n1 n2 gr =
   let nodetype = Operation (MatMul (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = 2 && List.length n2.size = 2
+    if List.length n1.size = 2 && List.length n2.size = 2 && (List.nth n1.size 1) = (List.hd n2.size)
     then [List.hd n1.size; List.nth n2.size 1]
     else failwith "Invalid dimensions"
   end in
@@ -159,7 +159,7 @@ let add n1 n2 gr =
   let nodetype = Operation (Add (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = List.length n2.size
+    if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith "Invalid dimensions"
   end in
@@ -172,7 +172,7 @@ let squared_loss n1 n2 gr =
   let nodetype = Operation (SquareLoss (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = List.length n2.size
+    if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith "Invalid dimensions"
   end in
@@ -206,19 +206,19 @@ let minus n1 n2 gr =
   let nodetype = Operation (Minus (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = List.length n2.size
+    if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith "Invalid dimensions"
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let pow n1 power gr =
-  if contains_optimizer [n1.nodetype]
+let pow n power gr =
+  if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
-  let nodetype = Operation (Pow (n1, power)) in
+  let nodetype = Operation (Pow (n, power)) in
   let (id, gr') = gen_id nodetype gr in
-  let size = n1.size in
+  let size = n.size in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
 let grad_descent n gr =

@@ -4,7 +4,7 @@ open Owl
 module GraphState : sig 
   open Owl
 
-  (* Graph state object *) 
+  (* Graph state object. *)
   type st
   
   (* node id is naming convention for nodes *)
