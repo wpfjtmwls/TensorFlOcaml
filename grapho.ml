@@ -294,13 +294,14 @@ let backward n gr st =
       | MatMul (a, b) ->
         let b_val = st |> get_node b.id in
         let a_val = st |> get_node a.id in
-        let _ = Printf.printf "Running Backprop on Matmul:  %s matmul %s = %s\n" a.id b.id node.id; in
+        (* let _ = Printf.printf "Running Backprop on Matmul:  %s matmul %s = %s\n" a.id b.id node.id; in
         let _ = Printf.printf "A %s * B %s = C %s\n" (string_of_dims a.size) (string_of_dims b.size) (string_of_dims node.size); in
         let _ = Printf.printf "G = %s\n" (grad |> Arr.shape |> string_of_shape); in
         let _ = Printf.printf "G = %s | Bt = %s | Agrad %s\n" (grad |> Arr.shape |> string_of_shape) (b_val |> Arr.transpose |> Arr.shape |> string_of_shape) (a_val |> Arr.shape |> string_of_shape); in
-        let _ = Printf.printf "At = %s | G = %s | Bgrad %s\n" (a_val |> Arr.transpose |> Arr.shape |> string_of_shape) (grad |> Arr.shape |> string_of_shape) (b_val |> Arr.shape |> string_of_shape); in
+        let _ = Printf.printf "At = %s | G = %s | Bgrad %s\n" (a_val |> Arr.transpose |> Arr.shape |> string_of_shape) (grad |> Arr.shape |> string_of_shape) (b_val |> Arr.shape |> string_of_shape); in *)
         let st1 = backprop_graddesc a (Arr.dot grad (b_val |> Arr.transpose)) lr st in
         let st2 = backprop_graddesc b (Arr.dot (a_val |> Arr.transpose) grad) lr st in
+        let _ = if node.id = "MM_0" then Arr.print (get_node "VAR_0" (merge_graphstates [st1; st2] st)) else (); in
         merge_graphstates [st1; st2] st
       | Add (a, b) ->
         let st1 = backprop_graddesc a (grad) lr st in
@@ -313,6 +314,7 @@ let backward n gr st =
       | Sigmoid a ->
         let sig_val = st |> get_node node.id in
         let a_val = st |> get_node a.id in
+        let _ = if node.id = "SIGM_0" then Arr.print (get_node "VAR_0" (backprop_graddesc a (Arr.mul a_val sig_val) lr st)) else (); in
         backprop_graddesc a (Arr.mul a_val sig_val) lr st
       | SquareLoss (pred, truth) ->
         let pred_val = st |> get_node pred.id in

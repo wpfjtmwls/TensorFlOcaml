@@ -66,8 +66,11 @@ module GraphState = struct
         fun (acc_st, updated_id_lst) new_st ->
           (* Fold over individual new_st and accum (state, updated_ids) *)
           List.fold_left (fun (acc_st, updated_id_lst) (id, mat) -> 
-            if List.mem id updated_id_lst then (acc_st, updated_id_lst) else
-            ((id, mat)::(List.remove_assoc id acc_st), id::updated_id_lst)
+            match List.assoc_opt id acc_st with
+            | None -> ((id, mat)::acc_st, id::updated_id_lst)
+            | Some acc_mat when Arr.(mat = acc_mat) ->
+              (acc_st, updated_id_lst)
+            | _ -> ((id, mat)::(List.remove_assoc id acc_st), id::updated_id_lst)
           )
           (acc_st, updated_id_lst) new_st
       )

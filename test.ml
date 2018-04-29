@@ -31,16 +31,19 @@ let y_pred, st = Graph.forward s2 graph graphstate
 let y_actual, st = Graph.forward label graph graphstate
 let new_st = Graph.backward optimizer graph graphstate
 
+let loss_trained, st = Graph.forward loss graph new_st
+
 let tests_mat = [
   ("Hidden_1", (h1_test, "A=[4x10],x=[5x4], xA=[5x10]"), " 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2.");
   ("Sigmoid_1", (s1_test, "H1=[5x10], s1=[5x10]"), " 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978");
   ("loss_1", (loss_test, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
   ("y_actual", (y_actual, "y_actual placeholder=[5x1]"), " 1. 1. 1. 1. 1.");
   ("y_pred", (y_pred, "y_pred=[5x1]"), " 0.987919222585 0.987919222585 0.987919222585 0.987919222585 0.987919222585");
+  (* ("trained_loss", (loss_trained, "trained loss"), ""); *)
 ]
 
 let tests_state = [
-  ("backward", (new_st, "new_state"), "");
+  (* ("backward", (new_st, "new_state"), ""); *)
 ]
 
 let mat_to_string ar =
@@ -49,6 +52,8 @@ let mat_to_string ar =
 
 let state_to_string st =
   GraphState.graphst_to_string st mat_to_string
+
+(* let _ = Printf.printf "%s \n \n %s" (mat_to_string (graphstate |> GraphState.get_node a1.id)) (mat_to_string (new_st |> GraphState.get_node a1.id)) *)
 
 let make_tests t (result, in_str) out_str stringify =
   ("\n########################### " ^ t ^ " ##################################\n\n    "
