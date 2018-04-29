@@ -2,7 +2,6 @@ open Owl
 
 (* Graph state object *)
 module GraphState : sig 
-  open Owl
 
   (* Graph state object. *)
   type st
