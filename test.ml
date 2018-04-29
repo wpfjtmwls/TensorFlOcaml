@@ -1,7 +1,7 @@
 open OUnit2
-open Graphst
 open Owl
 open Grapho
+open Graphst
 (* OCaml allows {|...|} as a syntax for strings in which the ...
    can contain unescaped quotes.  This is super useful for
    constructing test cases, as shown below. *)
@@ -15,6 +15,7 @@ let (h2, graph) = graph |> Graph.matmul s1 a2
 let (s2, graph) = graph |> Graph.sigmoid h2
 let (label, graph) = graph |> Graph.placeholder [5;1]
 let (loss, graph) = graph |> Graph.squared_loss s2 label
+let (optimizer, graph) = graph |> Graph.grad_descent loss
 
 (* Easy test *)
 let graphstate = GraphState.(empty
@@ -28,23 +29,35 @@ let s1_test, st = Graph.forward s1 graph graphstate
 let loss_test, st = Graph.forward loss graph graphstate
 let y_pred, st = Graph.forward s2 graph graphstate
 let y_actual, st = Graph.forward label graph graphstate
+let new_st = Graph.backward optimizer graph graphstate
 
-let tests = [
+let tests_mat = [
   ("Hidden_1", (h1_test, "A=[4x10],x=[5x4], xA=[5x10]"), " 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2.");
   ("Sigmoid_1", (s1_test, "H1=[5x10], s1=[5x10]"), " 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978");
   ("loss_1", (loss_test, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
   ("y_actual", (y_actual, "y_actual placeholder=[5x1]"), " 1. 1. 1. 1. 1.");
   ("y_pred", (y_pred, "y_pred=[5x1]"), " 0.987919222585 0.987919222585 0.987919222585 0.987919222585 0.987919222585");
 ]
-let to_string ar =
+
+let tests_state = [
+  ("backward", (new_st, "new_state"), "");
+]
+
+let mat_to_string ar =
   let array = Arr.to_array ar in
   Array.fold_left (fun acc i -> acc ^ " " ^ (string_of_float i)) "" array
 
-let make_tests t (result, in_str) out_str =
+let state_to_string st =
+  GraphState.graphst_to_string st mat_to_string
+
+let make_tests t (result, in_str) out_str stringify =
   ("\n########################### " ^ t ^ " ##################################\n\n    "
-  ^ in_str ^ " ========= EVALUATED TO ======> \n" ^ (to_string result) ^ "   \n\n"
+  ^ in_str ^ " ========= EVALUATED TO ======> \n" ^ (stringify result) ^ "   \n\n"
   ^ "   EXPECTED OUTPUT = \n" ^ out_str ^ "   \n\n"
   ^ "#####################################################################\n"
-  >:: (fun _ -> assert_equal out_str (to_string result)))
+  >:: (fun _ -> assert_equal out_str (stringify result)))
+
 let _ = run_test_tt_main ("suite" >::: 
-  List.map (fun (t, i, o) -> make_tests t i o) tests)
+  (List.map (fun (t, i, o) -> make_tests t i o mat_to_string) tests_mat) @ 
+  (List.map (fun (t, i, o) -> make_tests t i o state_to_string) tests_state)
+  )

@@ -164,40 +164,40 @@ let rec forward n gr st =
       let (a2, st2) = forward n2 gr st in
       (*let ndims1 = Arr.num_dims a1 in
       let ndims2 = Arr.num_dims a2 in*)
-      let _ = Printf.printf "Running Matmul on %s matmul %s = %s\n" n1.id n2.id n.id; in
+      (* let _ = Printf.printf "Running Matmul on %s matmul %s = %s\n" n1.id n2.id n.id; in *)
       let ar = Arr.dot a1 a2 in
       (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
     | Add (n1, n2) ->
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      let _ = Printf.printf "Running Add on %s + %s = %s \n" n1.id n2.id n.id; in
+      (* let _ = Printf.printf "Running Add on %s + %s = %s \n" n1.id n2.id n.id; in *)
       let ar = Arr.add a1 a2 in
       ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | Minus (n1, n2) ->
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      let _ = Printf.printf "Running Minus on %s - %s = %s\n" n1.id n2.id n.id; in
+      (* let _ = Printf.printf "Running Minus on %s - %s = %s\n" n1.id n2.id n.id; in *)
       let ar = Arr.(a1 - a2) in
       ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | SquareLoss (n1, n2) -> 
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      let _ = Printf.printf "Running Squareloss on sqloss(pred=%s, actual=%s) = %s\n" n1.id n2.id n.id; in
+      (* let _ = Printf.printf "Running Squareloss on sqloss(pred=%s, actual=%s) = %s\n" n1.id n2.id n.id; in *)
       let ar = Arr.(pow_scalar (a1 - a2) 2.) in
       ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
     | Sigmoid n1 ->
       let (a1, st1) = forward n1 gr st in
-      let _ = Printf.printf "Running Sigmoid on sigmoid(%s) = %s\n" n1.id n.id; in
+      (* let _ = Printf.printf "Running Sigmoid on sigmoid(%s) = %s\n" n1.id n.id; in *)
       let ar = Arr.sigmoid a1 in
       ar, add_node n.id ar st1
     | T a ->
       let (a_val, st1) = forward a gr st in
-      let _ = Printf.printf "Running T on %s.T %s\n" a.id n.id; in
+      (* let _ = Printf.printf "Running T on %s.T %s\n" a.id n.id; in *)
       let ar = Arr.transpose a_val in
       ar, add_node n.id ar st1
     | Pow (a, p) ->
       let (a_val, st1) = forward a gr st in
-      let _ = Printf.printf "Running Pow on %s ** %s = %s\n" a.id (string_of_float p) n.id; in
+      (* let _ = Printf.printf "Running Pow on %s ** %s = %s\n" a.id (string_of_float p) n.id; in *)
       let ar = Arr.scalar_pow p a_val in
       ar, add_node n.id ar st1
   end
@@ -217,6 +217,7 @@ let backward n gr st =
       | MatMul (a, b) ->
         let b_val = st |> get_node b.id in
         let a_val = st |> get_node a.id in
+        let _ = Printf.printf "Running Backprop on Matmul %s matmul %s = %s\n" a.id b.id n.id; in
         let st1 = backprop_graddesc a (Arr.mul grad b_val) lr st in
         let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
         merge_graphstates [st1; st2] st

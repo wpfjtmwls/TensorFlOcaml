@@ -71,5 +71,9 @@ module GraphState = struct
       )
       (old_st, []) new_st_lst
     in updated_state
+
+  let graphst_to_string st mat_to_string =
+    List.fold_left (fun str (id, mat) -> id ^ ":\n" ^ (mat_to_string mat) ^ "\n\n")
+    "" st
     
 end

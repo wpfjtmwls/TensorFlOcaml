@@ -31,4 +31,7 @@ module GraphState : sig
    * [usage] : new_graphstate = merge_graphstates [new_state1; new_state2] old_state
    *)
   val merge_graphstates : st list -> st -> st
+
+ (* Returns string representation of state *)
+ val graphst_to_string : st -> (Arr.arr -> string) -> string
 end
