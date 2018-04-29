@@ -56,7 +56,12 @@ let empty ={nc = {
 
 (* Helper function. Convert dimension to string *)
 let string_of_dims dims =
-  let s = List.fold_left (fun ac el -> ac ^ " " ^ (string_of_int el)) "" dims in
+  let s = List.fold_left (fun ac el -> ac ^ "x" ^ (string_of_int el)) "" dims in
+  String.sub s 1 (String.length s - 1)
+
+(* Helper function. Convert Arr.shape to string *)
+let string_of_shape sh =
+  let s = Array.fold_left (fun ac el -> ac ^ "x" ^ (string_of_int el)) "" sh in
   String.sub s 1 (String.length s - 1)
 
 (* Helper function. Converts nodetype to string. *)    
@@ -291,6 +296,7 @@ let backward n gr st =
         let a_val = st |> get_node a.id in
         let _ = Printf.printf "Running Backprop on Matmul:  %s matmul %s = %s\n" a.id b.id node.id; in
         let _ = Printf.printf "%s | %s | %s\n" (string_of_dims a.size) (string_of_dims b.size) (string_of_dims node.size); in
+        let _ = Printf.printf "%s | %s | %s\n" (a_val |> Arr.shape |> string_of_shape) (b_val |> Arr.shape |> string_of_shape) (grad |> Arr.shape |> string_of_shape); in
         let st1 = backprop_graddesc a (Arr.mul grad b_val) lr st in
         let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
         merge_graphstates [st1; st2] st
