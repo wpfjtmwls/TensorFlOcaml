@@ -2,7 +2,7 @@ test:
 	ocamlbuild -use-ocamlfind test.byte && ./test.byte
 
 compile:
-	ocamlbuild -use-ocamlfind graphst.cmo grapho.cmo
+	ocamlbuild -use-ocamlfind -I tests graphst.cmo grapho.cmo
 
 check:
 	bash checktypes.sh
