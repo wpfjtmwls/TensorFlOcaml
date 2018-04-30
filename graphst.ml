@@ -1,6 +1,6 @@
 open Owl
 open List
-open Node
+open Node.Node
 
 (* Graph state object *)
 module GraphState = struct
@@ -15,11 +15,13 @@ module GraphState = struct
   (* [Empty] is an empty mapping *)
   let empty = []
   
-  let add_node n matrix state =
-    matches_array_shape
-    match mem_assoc n.id state with
-    | true -> (n.id, matrix)::(remove_assoc n.id state)
-    | false -> (n.id, matrix)::state
+  let add_node n matrix state = 
+    if (matches_array_shape n matrix) then 
+      match mem_assoc n.id state with
+      | true -> (n.id, matrix)::(remove_assoc n.id state)
+      | false -> (n.id, matrix)::state
+    else 
+      failwith "Matrix Dimensions Mismatch. Check yo matrix sizes!"
   
   let get_node n state = match mem_assoc n.id state with 
     | true -> assoc n.id state

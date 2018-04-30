@@ -20,10 +20,10 @@ let (optimizer, graph) = graph |> Graph.grad_descent loss
 
 (* Easy test *)
 let graphstate = GraphState.(empty
-                   |> add_node x.id (Arr.ones [|5;4|])
-                   |> add_node a1.id (Arr.(mul_scalar (ones [|4;10|]) 0.5))
-                   |> add_node a2.id (Arr.(mul_scalar (ones [|10;1|]) 0.5))
-                   |> add_node label.id (Arr.(ones [|5;1|]))
+                   |> add_node x (Arr.ones [|5;4|])
+                   |> add_node a1 (Arr.(mul_scalar (ones [|4;10|]) 0.5))
+                   |> add_node a2 (Arr.(mul_scalar (ones [|10;1|]) 0.5))
+                   |> add_node label (Arr.(ones [|5;1|]))
 )
 let h1_test, st = Graph.forward h1 graph graphstate
 let s1_test, st = Graph.forward s1 graph graphstate
