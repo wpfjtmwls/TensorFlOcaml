@@ -1,14 +1,11 @@
 open Owl
+open Node.Node
 
 (* Graph state object *)
 module GraphState : sig 
-  open Owl
 
-  (* Graph state object *) 
+  (* Graph state object. *)
   type st
-  
-  (* node id is naming convention for nodes *)
-  type nodeid = string 
   
   (* [empty] initializes an empty mapping *)
   val empty : st
@@ -17,13 +14,13 @@ module GraphState : sig
    * [requires] : node name, corresponding matrix, current graphstate
    * [returns] : new graphstate with the node added
    *)
-  val add_node : nodeid -> Arr.arr -> st -> st
+  val add_node : node -> Arr.arr -> st -> st
   
   (* [get_node] gets a node from the current mapping 
    * [requires] : node name and the current graphstate
    * [returns] : corresponding matrix
    *)
-  val get_node : nodeid -> st -> Arr.arr
+  val get_node : node -> st -> Arr.arr
   
   (* [merge_graphstates] merges the two graphstates accordingly
    * [requires] : two graphsates to be merged and accumulator (which shouold be [] initially)

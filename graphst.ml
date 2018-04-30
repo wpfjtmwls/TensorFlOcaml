@@ -1,23 +1,30 @@
+open Owl
+open List
+open Node.Node
+
 (* Graph state object *)
 module GraphState = struct
-  open Owl
-  open List
   
   (* [nodeid] type is the naming convention for nodes *)
   type nodeid = string 
   
-  (* [Graphstate.st] is a mapping from nodeid to the corresponding owl matrix *)
+  (* [Graphstate.st] is a mapping from nodeid to the corresponding owl matrix.
+   * RI: for any node n, if n is mapped to Arr.arr a, then n.dims matches a.shape *)
   type st = (nodeid * Arr.arr) list 
   
   (* [Empty] is an empty mapping *)
-  let empty = [] 
+  let empty = []
   
-  let add_node id matrix state = match mem_assoc id state with
-    | true -> (id, matrix)::(remove_assoc id state)
-    | false -> (id, matrix)::state
+  let add_node n matrix state = 
+    if (matches_array_shape n matrix) then 
+      match mem_assoc n.id state with
+      | true -> (n.id, matrix)::(remove_assoc n.id state)
+      | false -> (n.id, matrix)::state
+    else 
+      failwith "Matrix Dimensions Mismatch. Check yo matrix sizes!"
   
-  let get_node id state = match mem_assoc id state with 
-    | true -> assoc id state
+  let get_node n state = match mem_assoc n.id state with 
+    | true -> assoc n.id state
     | false -> failwith "Exception : No such node id exists in Graph State"
   
   (* (* [update_state] updates the old state with new state 

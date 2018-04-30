@@ -1,71 +1,22 @@
 open Owl
 open Graphst.GraphState
+open Node.Node
+
+let testmode = true
 
 module Graph = struct
-type node_counts = {
-  nVar: int;
-  nPlaceholder: int; 
-  nMatmul: int;
-  nAdd: int;
-  nSquareLoss: int;
-  nSigmoid: int;
-  nGradDesc: int;
-  nT: int;
-  nMinus: int;
-  nPow: int;
-}
 
-type dims = int list
+(* maps string_of_node values to number of occurances (0 actually means 1 occurance) *)
+type node_counts = (string * int) list 
 
-type oper =
-  | MatMul of (node * node)
-  | Add of (node * node)
-  | Minus of (node * node)
-  | SquareLoss of (node * node)
-  | Sigmoid of node
-  | T of node
-  | Pow of (node * float)
+type t = {nc: node_counts}
 
-and optm = 
-  | GradDesc of float
-
-and nodetype =
-  | Placeholder
-  | Variable
-  | Operation of oper
-  | Optimizer of (optm * node)
-
-and node = {id: string; nodetype: nodetype; size: dims;}
-
-type t = {nc: node_counts;}
-
-let empty ={nc = {
-              nVar = 0;
-              nPlaceholder = 0;
-              nMatmul = 0;
-              nAdd = 0;
-              nSquareLoss = 0;
-              nSigmoid = 0;
-              nGradDesc = 0;
-              nT = 0;
-              nMinus = 0;
-              nPow = 0;
-            }}
+let empty = {nc = []}
 
 (* ------------ Helper Functions --------------- *)
 
-(* Helper function. Convert dimension to string *)
-let string_of_dims dims =
-  let s = List.fold_left (fun ac el -> ac ^ "x" ^ (string_of_int el)) "" dims in
-  String.sub s 1 (String.length s - 1)
-
-(* Helper function. Convert Arr.shape to string *)
-let string_of_shape sh =
-  let s = Array.fold_left (fun ac el -> ac ^ "x" ^ (string_of_int el)) "" sh in
-  String.sub s 1 (String.length s - 1)
-
 (* Helper function. Converts nodetype to string. *)    
-let to_string = function
+let string_of_nodetype = function
   | Placeholder -> "PH"
   | Variable -> "VAR"
   | Operation o -> begin
@@ -81,43 +32,20 @@ let to_string = function
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
-(* Helper function. Gets appropriate value from node_counts *)
-let get_node_count nc = function
-  | Placeholder -> nc.nPlaceholder
-  | Variable -> nc.nVar
-  | Operation o -> begin
-    match o with
-    | MatMul _ -> nc.nMatmul
-    | Add _ -> nc.nAdd
-    | SquareLoss _ -> nc.nSquareLoss
-    | Sigmoid _ -> nc.nSigmoid
-    | T _ -> nc.nT
-    | Minus _ -> nc.nMinus
-    | Pow _ -> nc.nPow
-  end
-  | Optimizer (o, _) -> (match o with
-    | GradDesc _ -> nc.nGradDesc)
-
-(* Helper function. Returns nc with the appropriate value incremented *)
-let incr_node_count nc = function
-  | Placeholder -> {nc with nPlaceholder = nc.nPlaceholder + 1}
-  | Variable  -> {nc with nVar = nc.nVar + 1}
-  | Operation o -> begin
-    match o with
-    | MatMul _ -> {nc with nMatmul = nc.nMatmul + 1}
-    | Add _ -> {nc with nAdd = nc.nAdd + 1}
-    | SquareLoss _ -> {nc with nSquareLoss = nc.nSquareLoss + 1}
-    | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1}
-    | T _ -> {nc with nT = nc.nT + 1}
-    | Minus _ -> {nc with nMinus = nc.nMinus + 1}
-    | Pow _ -> {nc with nPow = nc.nPow + 1}
-  end
-  | Optimizer (o, _) -> (match o with
-    | GradDesc _ -> {nc with nGradDesc = nc.nGradDesc + 1})
-
 (* Helper function. Converts nodetype and graph to id and new graph *)
-let gen_id nt gr =
-  to_string nt ^ "_" ^ string_of_int (get_node_count gr.nc nt), {nc= incr_node_count gr.nc nt}
+let gen_id nt gr = (* optional prefix *)
+  let name = string_of_nodetype nt in
+  let num = match List.assoc_opt name gr.nc with
+  | None -> 0
+  | Some x -> x + 1 in
+  let gr' = if num = 0 then {nc = (name,0)::gr.nc} else begin
+    let f = fun (k,v) -> begin
+      if k = name then (k, num)
+      else (k,v)
+    end in
+    {nc = List.map f gr.nc}
+  end in
+  name ^ "_" ^ (string_of_int num), gr'
 
 (* Helper function. Returns true iff a nodetype in nodetypes is an optimizer *)
 let contains_optimizer nodetypes =
@@ -146,7 +74,7 @@ let matmul n1 n2 gr =
   let nodetype = Operation (MatMul (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = 2 && List.length n2.size = 2
+    if List.length n1.size = 2 && List.length n2.size = 2 && (List.nth n1.size 1) = (List.hd n2.size)
     then [List.hd n1.size; List.nth n2.size 1]
     else failwith "Invalid dimensions"
   end in
@@ -159,7 +87,7 @@ let add n1 n2 gr =
   let nodetype = Operation (Add (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = List.length n2.size
+    if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith "Invalid dimensions"
   end in
@@ -172,7 +100,7 @@ let squared_loss n1 n2 gr =
   let nodetype = Operation (SquareLoss (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = List.length n2.size
+    if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith "Invalid dimensions"
   end in
@@ -206,19 +134,19 @@ let minus n1 n2 gr =
   let nodetype = Operation (Minus (n1, n2)) in
   let (id, gr') = gen_id nodetype gr in
   let size = begin
-    if List.length n1.size = List.length n2.size
+    if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith "Invalid dimensions"
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let pow n1 power gr =
-  if contains_optimizer [n1.nodetype]
+let pow n power gr =
+  if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
-  let nodetype = Operation (Pow (n1, power)) in
+  let nodetype = Operation (Pow (n, power)) in
   let (id, gr') = gen_id nodetype gr in
-  let size = n1.size in
+  let size = n.size in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
 let grad_descent n gr =
@@ -233,7 +161,7 @@ let grad_descent n gr =
 
 let rec forward n gr st =
   match n.nodetype with
-  | Placeholder | Variable -> get_node n.id st, st
+  | Placeholder | Variable -> get_node n st, st
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
   | Operation o -> begin
     match o with
@@ -242,40 +170,40 @@ let rec forward n gr st =
       let (a2, st2) = forward n2 gr st in
       (* let _ = Printf.printf "Running Matmul on %s matmul %s = %s\n" n1.id n2.id n.id; in *)
       let ar = Arr.dot a1 a2 in
-      (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
+      (ar, ((merge_graphstates [st1; st2] st) |> add_node n ar))
     | Add (n1, n2) ->
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      (* let _ = Printf.printf "Running Add on %s + %s = %s \n" n1.id n2.id n.id; in *)
+      (* let _ = Printf.printf "Running Add on %s + %s = %s \n" n1.id n2.id n; in *)
       let ar = Arr.add a1 a2 in
-      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n ar)
     | Minus (n1, n2) ->
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      (* let _ = Printf.printf "Running Minus on %s - %s = %s\n" n1.id n2.id n.id; in *)
+      (* let _ = Printf.printf "Running Minus on %s - %s = %s\n" n1.id n2.id n; in *)
       let ar = Arr.(a1 - a2) in
-      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n ar)
     | SquareLoss (n1, n2) -> 
       let (a1, st1) = forward n1 gr st in
       let (a2, st2) = forward n2 gr st in
-      (* let _ = Printf.printf "Running Squareloss on sqloss(pred=%s, actual=%s) = %s\n" n1.id n2.id n.id; in *)
+      (* let _ = Printf.printf "Running Squareloss on sqloss(pred=%s, actual=%s) = %s\n" n1.id n2.id n; in *)
       let ar = Arr.(pow_scalar (a1 - a2) 2.) in
-      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n ar)
     | Sigmoid n1 ->
       let (a1, st1) = forward n1 gr st in
-      (* let _ = Printf.printf "Running Sigmoid on sigmoid(%s) = %s\n" n1.id n.id; in *)
+      (* let _ = Printf.printf "Running Sigmoid on sigmoid(%s) = %s\n" n1.id n; in *)
       let ar = Arr.sigmoid a1 in
-      ar, add_node n.id ar st1
+      ar, add_node n ar st1
     | T a ->
       let (a_val, st1) = forward a gr st in
-      (* let _ = Printf.printf "Running T on %s.T %s\n" a.id n.id; in *)
+      (* let _ = Printf.printf "Running T on %s.T %s\n" a.id n; in *)
       let ar = Arr.transpose a_val in
-      ar, add_node n.id ar st1
+      ar, add_node n ar st1
     | Pow (a, p) ->
       let (a_val, st1) = forward a gr st in
-      (* let _ = Printf.printf "Running Pow on %s ** %s = %s\n" a.id (string_of_float p) n.id; in *)
+      (* let _ = Printf.printf "Running Pow on %s ** %s = %s\n" a.id (string_of_float p) n; in *)
       let ar = Arr.scalar_pow p a_val in
-      ar, add_node n.id ar st1
+      ar, add_node n ar st1
   end
 
   (* Backward runners *)
@@ -286,14 +214,14 @@ let rec forward n gr st =
     | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
     | Placeholder -> st (* Placeholders do not update on backprop *)
     | Variable -> 
-      let var_val = st |> get_node node.id in
+      let var_val = st |> get_node node in
       let new_val = Arr.(var_val - (mul_scalar grad lr)) in
-      st |> add_node node.id new_val
+      st |> add_node node new_val
     | Operation op -> begin
       match op with
       | MatMul (a, b) ->
-        let b_val = st |> get_node b.id in
-        let a_val = st |> get_node a.id in
+        let b_val = st |> get_node b in
+        let a_val = st |> get_node a in
         (* let _ = Printf.printf "Running Backprop on Matmul:  %s matmul %s = %s\n" a.id b.id node.id; in
         let _ = Printf.printf "A %s * B %s = C %s\n" (string_of_dims a.size) (string_of_dims b.size) (string_of_dims node.size); in
         let _ = Printf.printf "G = %s\n" (grad |> Arr.shape |> string_of_shape); in
@@ -311,16 +239,16 @@ let rec forward n gr st =
         let st2 = backprop_graddesc b (Arr.mul_scalar grad (-1.)) lr st in
         merge_graphstates [st1; st2] st
       | Sigmoid a ->
-        let sig_val = st |> get_node node.id in
+        let sig_val = st |> get_node node in
         backprop_graddesc a Arr.(mul grad (mul sig_val ((ones [|1|]) - sig_val))) lr st
       | SquareLoss (pred, truth) ->
-        let pred_val = st |> get_node pred.id in
-        let truth_val = st |> get_node truth.id in
+        let pred_val = st |> get_node pred in
+        let truth_val = st |> get_node truth in
         backprop_graddesc pred Arr.(mul_scalar (pred_val - truth_val) 2.) lr st
       | T a ->
         backprop_graddesc a (Arr.transpose grad) lr st
       | Pow (a, p) ->
-        let a_val = st |> get_node a.id in
+        let a_val = st |> get_node a in
         let p_minus_1 = p -. 1. in
         backprop_graddesc a Arr.(pow_scalar (mul_scalar a_val p) (p_minus_1)) lr st
     end
