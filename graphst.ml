@@ -61,20 +61,21 @@ module GraphState = struct
 
   let merge_graphstates (new_st_lst : st list) (old_st : st) =
     (* Fold over list of new_st and accum (state, updated_ids) *)
-    let (updated_state, _) =
+    let updated_state =
       List.fold_left (
-        fun (acc_st, updated_id_lst) new_st ->
+        fun acc_st new_st ->
           (* Fold over individual new_st and accum (state, updated_ids) *)
-          List.fold_left (fun (acc_st, updated_id_lst) (id, mat) -> 
-            match List.assoc_opt id acc_st with
-            | None -> ((id, mat)::acc_st, id::updated_id_lst)
-            | Some acc_mat when Arr.(mat = acc_mat) ->
-              (acc_st, updated_id_lst)
-            | _ -> ((id, mat)::(List.remove_assoc id acc_st), id::updated_id_lst)
+          List.fold_left (fun acc_st (id, mat) -> 
+            match (List.assoc_opt id old_st), (List.assoc_opt id acc_st) with
+            | None, None -> (id, mat)::acc_st
+            | Some old_mat, Some acc_mat when Arr.(old_mat <> mat)-> (id, mat)::(List.remove_assoc id acc_st)
+            | Some _, Some _ -> acc_st
+            | Some _, None -> (id, mat)::acc_st
+            | None, Some _ -> acc_st
           )
-          (acc_st, updated_id_lst) new_st
+          acc_st new_st
       )
-      (old_st, []) new_st_lst
+      old_st new_st_lst
     in updated_state
 
   let graphst_to_string st mat_to_string =

@@ -30,8 +30,14 @@ let loss_test, st = Graph.forward loss graph graphstate
 let y_pred, st = Graph.forward s2 graph graphstate
 let y_actual, st = Graph.forward label graph graphstate
 let new_st = Graph.backward optimizer graph graphstate
-
 let loss_trained, st = Graph.forward loss graph new_st
+
+let rec backward optimizer graph graphstate loss_list n =
+  let loss, _ = Graph.forward loss graph graphstate in
+  if n = 0 then ((loss::loss_list), graphstate)
+  else
+  let new_state = Graph.backward optimizer graph graphstate in
+  backward optimizer graph new_state (loss::loss_list) (n-1)
 
 let tests_mat = [
   ("Hidden_1", (h1_test, "A=[4x10],x=[5x4], xA=[5x10]"), " 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2.");
@@ -39,7 +45,7 @@ let tests_mat = [
   ("loss_1", (loss_test, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
   ("y_actual", (y_actual, "y_actual placeholder=[5x1]"), " 1. 1. 1. 1. 1.");
   ("y_pred", (y_pred, "y_pred=[5x1]"), " 0.987919222585 0.987919222585 0.987919222585 0.987919222585 0.987919222585");
-  (* ("trained_loss", (loss_trained, "trained loss"), ""); *)
+  ("trained_loss", (loss_trained, "trained loss"), " 0.000145944855817 0.000145944855817 0.000145944855817 0.000145944855817 0.000145944855817");
 ]
 
 let tests_state = [
@@ -52,8 +58,6 @@ let mat_to_string ar =
 
 let state_to_string st =
   GraphState.graphst_to_string st mat_to_string
-
-(* let _ = Printf.printf "%s \n \n %s" (mat_to_string (graphstate |> GraphState.get_node a1.id)) (mat_to_string (new_st |> GraphState.get_node a1.id)) *)
 
 let make_tests t (result, in_str) out_str stringify =
   ("\n########################### " ^ t ^ " ##################################\n\n    "

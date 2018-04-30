@@ -225,7 +225,7 @@ let grad_descent n gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
-  let nodetype = Optimizer (GradDesc(0.1), n) in (* TODO: change learning rate *)
+  let nodetype = Optimizer (GradDesc(0.0001), n) in (* TODO: change learning rate *)
   let (id, gr') = gen_id nodetype gr in
   ({id=id; nodetype=nodetype; size=[]}, gr')
 
@@ -301,7 +301,7 @@ let backward n gr st =
         let _ = Printf.printf "At = %s | G = %s | Bgrad %s\n" (a_val |> Arr.transpose |> Arr.shape |> string_of_shape) (grad |> Arr.shape |> string_of_shape) (b_val |> Arr.shape |> string_of_shape); in *)
         let st1 = backprop_graddesc a (Arr.dot grad (b_val |> Arr.transpose)) lr st in
         let st2 = backprop_graddesc b (Arr.dot (a_val |> Arr.transpose) grad) lr st in
-        let _ = if node.id = "MM_0" then Arr.print (get_node "VAR_0" (merge_graphstates [st1; st2] st)) else (); in
+        (* let _ = if node.id = "MM_1" then Arr.print (get_node "VAR_0" (merge_graphstates [st1; st2] st)) else (); in *)
         merge_graphstates [st1; st2] st
       | Add (a, b) ->
         let st1 = backprop_graddesc a (grad) lr st in
@@ -314,8 +314,8 @@ let backward n gr st =
       | Sigmoid a ->
         let sig_val = st |> get_node node.id in
         let a_val = st |> get_node a.id in
-        let _ = if node.id = "SIGM_0" then Arr.print (get_node "VAR_0" (backprop_graddesc a (Arr.mul a_val sig_val) lr st)) else (); in
-        backprop_graddesc a (Arr.mul a_val sig_val) lr st
+        (* let _ = if node.id = "SIGM_1" then Arr.print (get_node "VAR_0" (backprop_graddesc a (Arr.mul a_val sig_val) lr st)) else (); in *)
+        backprop_graddesc a Arr.(mul grad (mul sig_val ((ones [|1|]) - sig_val))) lr st
       | SquareLoss (pred, truth) ->
         let pred_val = st |> get_node pred.id in
         let truth_val = st |> get_node truth.id in
