@@ -1,8 +1,5 @@
 test:
-	ocamlbuild -use-ocamlfind test.byte && ./test.byte
-
-compile:
-	ocamlbuild -use-ocamlfind fileio.cmo jaynet.ml test.ml tf.ml tfchain.mli tfgraph.cmo tfgraphst.cmo tfnode.ml
+	ocamlbuild -use-ocamlfind -I tests test.byte && ./test.byte
 
 check:
 	bash checktypes.sh

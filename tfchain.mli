@@ -1,9 +1,10 @@
+open Tf
 open Tfnode
 open Tfgraph
 open Tfgraphst
 
 module type Chain = 
-  functor (SB_1 : SUBGRAPH) (SB_2 : SUBGRAPH) -> SUBGRAPH
+  functor (SB_1 : SUBGRAPH) (SB_2 : SUBGRAPH) -> (* SUBGRAPH *)
   sig
     (* [create] takes a node list of inputs and creates a computational graph under the namespace provided.
      * Requires: [inputs] : node list, a list of nodes that is required by the subgraph
