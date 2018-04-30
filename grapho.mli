@@ -74,10 +74,10 @@ module Graph : sig
   *)
   val forward : node -> t -> GraphState.st -> Arr.arr * GraphState.st
 
-  (* [backword] takes a node, a graph, and a graph state inputs (max_iters and delta are optional arguments) and outputs the resulting matrix
+  (* [backword] takes a node, a graph, and a graph state inputs and outputs the resulting matrix
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : changed GraphState from backward pass into previous nodes and update the according mutable fields
   *)
-  val backward : node -> t -> GraphState.st -> GraphState.st
+  val backward : node -> t -> ?max_iter:int -> ?delta:float -> GraphState.st -> (GraphState.st * (Arr.arr list))
 
 end

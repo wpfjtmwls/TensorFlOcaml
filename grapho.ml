@@ -278,7 +278,7 @@ let rec forward n gr st =
       ar, add_node n.id ar st1
   end
 
-let backward n gr st =
+  (* Backward runners *)
   (* Helper to backprop for gradient descent *)
   let rec backprop_graddesc node grad lr st =
     let _ = Printf.printf "--Backprop-- %s\n" node.id; in
@@ -301,7 +301,6 @@ let backward n gr st =
         let _ = Printf.printf "At = %s | G = %s | Bgrad %s\n" (a_val |> Arr.transpose |> Arr.shape |> string_of_shape) (grad |> Arr.shape |> string_of_shape) (b_val |> Arr.shape |> string_of_shape); in *)
         let st1 = backprop_graddesc a (Arr.dot grad (b_val |> Arr.transpose)) lr st in
         let st2 = backprop_graddesc b (Arr.dot (a_val |> Arr.transpose) grad) lr st in
-        (* let _ = if node.id = "MM_1" then Arr.print (get_node "VAR_0" (merge_graphstates [st1; st2] st)) else (); in *)
         merge_graphstates [st1; st2] st
       | Add (a, b) ->
         let st1 = backprop_graddesc a (grad) lr st in
@@ -313,8 +312,6 @@ let backward n gr st =
         merge_graphstates [st1; st2] st
       | Sigmoid a ->
         let sig_val = st |> get_node node.id in
-        let a_val = st |> get_node a.id in
-        (* let _ = if node.id = "SIGM_1" then Arr.print (get_node "VAR_0" (backprop_graddesc a (Arr.mul a_val sig_val) lr st)) else (); in *)
         backprop_graddesc a Arr.(mul grad (mul sig_val ((ones [|1|]) - sig_val))) lr st
       | SquareLoss (pred, truth) ->
         let pred_val = st |> get_node pred.id in
@@ -327,16 +324,23 @@ let backward n gr st =
         let p_minus_1 = p -. 1. in
         backprop_graddesc a Arr.(pow_scalar (mul_scalar a_val p) (p_minus_1)) lr st
     end
-  in
-  (* Run backward pass *)
-  match n.nodetype with
-  | Placeholder | Variable | Operation _ -> 
-    failwith "Unable to run backward iteration on non-optimizer node"
-  | Optimizer (opt, loss_node) -> begin
-    let (loss_val, st_after_run) = forward loss_node gr st in
+
+let rec backward_helper opt loss_node graph graphstate loss_list n =
+  let loss, st_after_run = forward loss_node graph graphstate in
+  (* TODO: terminate on delta *)
+  if n = 0 then (graphstate, loss::loss_list) else
+  let backpropped =
     match opt with
     | GradDesc lr ->
       backprop_graddesc loss_node (Arr.ones [|1|]) lr st_after_run
-  end
+  in
+  backward_helper opt loss_node graph (backpropped) (loss::loss_list) (n-1)
+
+let backward n gr ?(max_iter=10) ?(delta=0.001) st =
+  match n.nodetype with
+  | Placeholder | Variable | Operation _ -> 
+    failwith "Unable to run backward iteration on non-optimizer node"
+  | Optimizer (opt, loss_node) ->
+    backward_helper opt loss_node gr st [] max_iter
 
 end

@@ -5,19 +5,19 @@ open Graphst
 (* OCaml allows {|...|} as a syntax for strings in which the ...
    can contain unescaped quotes.  This is super useful for
    constructing test cases, as shown below. *)
-let graph = Graph.empty
-let (a1, graph) = graph |> Graph.variable [4;10]
-let (x, graph) = graph |> Graph.placeholder [5;4]
-let (h1, graph) = graph |> Graph.matmul x a1
-let (s1, graph) = graph |> Graph.sigmoid h1
-let (a2, graph) = graph |> Graph.variable [10;1]
-let (h2, graph) = graph |> Graph.matmul s1 a2
-let (s2, graph) = graph |> Graph.sigmoid h2
-let (label, graph) = graph |> Graph.placeholder [5;1]
-let (loss, graph) = graph |> Graph.squared_loss s2 label
-let (optimizer, graph) = graph |> Graph.grad_descent loss
 
-(* Easy test *)
+(* Simple graph of sigmoid(A1x) = s1, sigmoid(A2s1) = s2, (s2-label)^2 = loss *)
+let graph = Graph.empty
+let (a1, graph) =         graph |> Graph.variable [4;10]
+let (x, graph) =          graph |> Graph.placeholder [5;4]
+let (h1, graph) =         graph |> Graph.matmul x a1
+let (s1, graph) =         graph |> Graph.sigmoid h1
+let (a2, graph) =         graph |> Graph.variable [10;1]
+let (h2, graph) =         graph |> Graph.matmul s1 a2
+let (s2, graph) =         graph |> Graph.sigmoid h2
+let (label, graph) =      graph |> Graph.placeholder [5;1]
+let (loss, graph) =       graph |> Graph.squared_loss s2 label
+let (optimizer, graph) =  graph |> Graph.grad_descent loss
 let graphstate = GraphState.(empty
                    |> add_node x.id (Arr.ones [|5;4|])
                    |> add_node a1.id (Arr.(mul_scalar (ones [|4;10|]) 0.5))
@@ -29,15 +29,8 @@ let s1_test, st = Graph.forward s1 graph graphstate
 let loss_test, st = Graph.forward loss graph graphstate
 let y_pred, st = Graph.forward s2 graph graphstate
 let y_actual, st = Graph.forward label graph graphstate
-let new_st = Graph.backward optimizer graph graphstate
+let new_st, losslist = Graph.backward optimizer graph graphstate
 let loss_trained, st = Graph.forward loss graph new_st
-
-let rec backward optimizer graph graphstate loss_list n =
-  let loss, _ = Graph.forward loss graph graphstate in
-  if n = 0 then ((loss::loss_list), graphstate)
-  else
-  let new_state = Graph.backward optimizer graph graphstate in
-  backward optimizer graph new_state (loss::loss_list) (n-1)
 
 let tests_mat = [
   ("Hidden_1", (h1_test, "A=[4x10],x=[5x4], xA=[5x10]"), " 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2.");
@@ -45,7 +38,7 @@ let tests_mat = [
   ("loss_1", (loss_test, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
   ("y_actual", (y_actual, "y_actual placeholder=[5x1]"), " 1. 1. 1. 1. 1.");
   ("y_pred", (y_pred, "y_pred=[5x1]"), " 0.987919222585 0.987919222585 0.987919222585 0.987919222585 0.987919222585");
-  ("trained_loss", (loss_trained, "trained loss"), " 0.000145944855817 0.000145944855817 0.000145944855817 0.000145944855817 0.000145944855817");
+  ("trained_loss", (loss_trained, "trained loss"), " 0.000145941911639 0.000145941911639 0.000145941911639 0.000145941911639 0.000145941911639");
 ]
 
 let tests_state = [
