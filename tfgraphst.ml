@@ -36,8 +36,9 @@ module GraphState = struct
     | (id, new_matrix)::t -> 
       begin match assoc_opt id update_st with 
       | None -> 
-      let () = print_endline(id ^ "is missing\n") in
-      failwith "Exception : New Graph states lost a mapping"
+        let new_update_st = (id, new_matrix)::update_st in
+        let new_acc = id::acc in
+        update_state t new_update_st new_acc
       | Some old_matrix -> 
         begin match new_matrix = old_matrix with
         | true -> update_state t update_st acc 
