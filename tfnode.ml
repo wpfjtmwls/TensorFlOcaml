@@ -40,3 +40,5 @@ let dims_of_shape sh =
 (* Return true iff n.size matches the shape of ar *)
 let matches_array_shape n ar =
   ar |> Arr.shape |> dims_of_shape = n.size
+
+let empty = {id="";nodetype=Placeholder;size=[]}

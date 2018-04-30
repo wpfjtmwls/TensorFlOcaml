@@ -1,8 +1,5 @@
 test:
-	ocamlbuild -use-ocamlfind test.byte && ./test.byte
-
-compile:
-	ocamlbuild -use-ocamlfind graphst.cmo grapho.cmo
+	ocamlbuild -use-ocamlfind -I tests test.byte && ./test.byte
 
 check:
 	bash checktypes.sh
