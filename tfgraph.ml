@@ -32,20 +32,22 @@ let string_of_nodetype = function
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
-(* Helper function. Converts nodetype and graph to id and new graph *)
-let gen_id nt gr = (* optional prefix *)
+(* Helper function. Converts nodetype and graph to id and new graph.
+ * If prefix is set, the id will be prefixed by the prefix followed *)
+let gen_id nt ?(prefix="") gr =
   let name = string_of_nodetype nt in
   let num = match List.assoc_opt name gr.nc with
-  | None -> 0
-  | Some x -> x + 1 in
-  let gr' = if num = 0 then {nc = (name,0)::gr.nc} else begin
-    let f = fun (k,v) -> begin
+    | None -> 0
+    | Some x -> x + 1
+  in
+  let f = fun (k,v) ->
       if k = name then (k, num)
       else (k,v)
-    end in
-    {nc = List.map f gr.nc}
-  end in
-  name ^ "_" ^ (string_of_int num), gr'
+  in
+  let gr' = if num = 0 then {nc = (name,0)::gr.nc} else
+    {nc = (List.map f (gr.nc))}
+  in
+  ((prefix ^ name ^ "_" ^ (string_of_int num)), gr')
 
 (* Helper function. Returns true iff a nodetype in nodetypes is an optimizer *)
 let contains_optimizer nodetypes =
@@ -57,22 +59,22 @@ let contains_optimizer nodetypes =
 
 (* ------------ Node Creation --------------- *)
 
-let variable dims gr =
+let variable dims ?(prefix="") gr =
   let nodetype = Variable in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   ({id=id; nodetype=nodetype; size=dims}, gr')
 
-let placeholder dims gr =
+let placeholder dims ?(prefix="") gr =
   let nodetype = Placeholder in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   ({id=id; nodetype=nodetype; size=dims}, gr')
 
-let matmul n1 n2 gr =
+let matmul n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (MatMul (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && List.length n2.size = 2 && (List.nth n1.size 1) = (List.hd n2.size)
     then [List.hd n1.size; List.nth n2.size 1]
@@ -80,12 +82,12 @@ let matmul n1 n2 gr =
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let add n1 n2 gr =
+let add n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Add (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
@@ -93,12 +95,12 @@ let add n1 n2 gr =
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let squared_loss n1 n2 gr =
+let squared_loss n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (SquareLoss (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
@@ -106,20 +108,20 @@ let squared_loss n1 n2 gr =
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let sigmoid n gr =
+let sigmoid n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Sigmoid n) in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   ({id=id; nodetype=nodetype; size=n.size}, gr')
 
-let trans n gr =
+let trans n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (T n) in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   let size = begin
     if List.length n.size = 2
     then List.rev n.size
@@ -127,12 +129,12 @@ let trans n gr =
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let minus n1 n2 gr =
+let minus n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Minus (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
@@ -140,21 +142,21 @@ let minus n1 n2 gr =
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let pow n power gr =
+let pow n power ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Pow (n, power)) in
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   let size = n.size in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
-let grad_descent n gr =
+let grad_descent n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Optimizer (GradDesc(0.0001), n) in (* TODO: change learning rate *)
-  let (id, gr') = gen_id nodetype gr in
+  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
   ({id=id; nodetype=nodetype; size=[]}, gr')
 
   (* ------------ Runners --------------- *)
@@ -209,7 +211,6 @@ let rec forward n gr st =
   (* Backward runners *)
   (* Helper to backprop for gradient descent *)
   let rec backprop_graddesc node grad lr st =
-    let _ = Printf.printf "--Backprop-- %s\n" node.id; in
     match node.nodetype with
     | Optimizer _ ->  failwith "Should not be backpropping on optimizer"
     | Placeholder -> st (* Placeholders do not update on backprop *)
