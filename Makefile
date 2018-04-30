@@ -2,7 +2,7 @@ test:
 	ocamlbuild -use-ocamlfind test.byte && ./test.byte
 
 compile:
-	ocamlbuild -use-ocamlfind graphst.cmo grapho.cmo
+	ocamlbuild -use-ocamlfind fileio.cmo jaynet.ml test.ml tf.ml tfchain.mli tfgraph.cmo tfgraphst.cmo tfnode.ml
 
 check:
 	bash checktypes.sh
