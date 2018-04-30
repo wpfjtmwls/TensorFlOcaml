@@ -7,15 +7,18 @@ let testmode = true
 module Graph = struct
 
 (* maps string_of_node values to number of occurances (0 actually means 1 occurance) *)
-type node_counts = (string * int) list 
+type node_counts = (string * int) list
 
-type t = {nc: node_counts}
+(* maps node ids to the nodes themselves *)
+type id_map = (string * node) list
 
-let empty = {nc = []}
+type t = {nc: node_counts; idm: id_map}
+
+let empty = {nc = []; idm = []}
 
 (* ------------ Helper Functions --------------- *)
 
-(* Helper function. Converts nodetype to string. *)    
+(* Helper function. Converts nodetype to string. *)
 let string_of_nodetype = function
   | Placeholder -> "PH"
   | Variable -> "VAR"
@@ -32,23 +35,20 @@ let string_of_nodetype = function
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
-(* Helper function. Converts nodetype and graph to id and new graph.
+(* Helper function. Converts nodetype and nodecounts to id and new nodecounts.
  * If prefix is set, the id will be prefixed by the prefix followed *)
-let gen_id nt ?(prefix="") gr =
+let gen_id nt ?(prefix="") (nc:node_counts) =
   let name = string_of_nodetype nt in
-  let num = match List.assoc_opt name gr.nc with
+  let num = match List.assoc_opt name nc with
     | None -> 0
-    | Some x -> x + 1
-  in
+    | Some x -> x + 1 in
   let f = fun (k,v) ->
       if k = name then (k, num)
-      else (k,v)
-  in
-  let gr' = if num = 0 then {nc = (name,0)::gr.nc} else
-    {nc = (List.map f (gr.nc))}
-  in
+      else (k,v) in
+  let nc' = if num = 0 then (name,0)::nc else
+    List.map f nc in
   let prefix' = if prefix = "" then "" else prefix ^ "_" in
-  ((prefix' ^ name ^ "_" ^ (string_of_int num)), gr')
+  ((prefix' ^ name ^ "_" ^ (string_of_int num)), nc')
 
 (* Helper function. Returns true iff a nodetype in nodetypes is an optimizer *)
 let contains_optimizer nodetypes =
@@ -62,103 +62,113 @@ let contains_optimizer nodetypes =
 
 let variable dims ?(prefix="") gr =
   let nodetype = Variable in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
-  ({id=id; nodetype=nodetype; size=dims}, gr')
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let node = {id=id; nodetype=nodetype; size=dims} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let placeholder dims ?(prefix="") gr =
   let nodetype = Placeholder in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
-  ({id=id; nodetype=nodetype; size=dims}, gr')
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let node = {id=id; nodetype=nodetype; size=dims} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let matmul n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (MatMul (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && List.length n2.size = 2 && (List.nth n1.size 1) = (List.hd n2.size)
     then [List.hd n1.size; List.nth n2.size 1]
     else failwith ("Invalid dimensions for matmul " ^ n1.id ^ " " ^ n2.id)
   end in
-  ({id=id; nodetype=nodetype; size=size}, gr')
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let add n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Add (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith  ("Invalid dimensions for add " ^ n1.id ^ " " ^ n2.id)
   end in
-  ({id=id; nodetype=nodetype; size=size}, gr')
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let squared_loss n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (SquareLoss (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith  ("Invalid dimensions for sqloss " ^ n1.id ^ " " ^ n2.id)
   end in
-  ({id=id; nodetype=nodetype; size=size}, gr')
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let sigmoid n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Sigmoid n) in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
-  ({id=id; nodetype=nodetype; size=n.size}, gr')
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let node = {id=id; nodetype=nodetype; size=n.size} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let trans n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (T n) in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
     if List.length n.size = 2
     then List.rev n.size
     else failwith "Invalid dimensions"
   end in
-  ({id=id; nodetype=nodetype; size=size}, gr')
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let minus n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Minus (n1, n2)) in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
     else failwith  ("Invalid dimensions for minus" ^ n1.id ^ " " ^ n2.id)
   end in
-  ({id=id; nodetype=nodetype; size=size}, gr')
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let pow n power ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Pow (n, power)) in
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n.size in
-  ({id=id; nodetype=nodetype; size=size}, gr')
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
 let grad_descent n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Optimizer (GradDesc(0.0001), n) in (* TODO: change learning rate *)
-  let (id, gr') = gen_id nodetype gr ~prefix:prefix in
-  ({id=id; nodetype=nodetype; size=[]}, gr')
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let node = {id=id; nodetype=nodetype; size=[]} in
+  (node, {nc=nc'; idm = (id,node)::gr.idm})
 
   (* ------------ Runners --------------- *)
 
