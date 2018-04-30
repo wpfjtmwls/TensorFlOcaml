@@ -1,7 +1,7 @@
 open OUnit2
 open Owl
-open Grapho
-open Graphst
+open Tfgraph
+open Tfgraphst
 
 (* OCaml allows {|...|} as a syntax for strings in which the ...
    can contain unescaped quotes.  This is super useful for

@@ -1,5 +1,5 @@
 open Owl
-open Graphst
+open Tfgraphst
 open Tfnode
 
 module Graph : sig
