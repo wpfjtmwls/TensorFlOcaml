@@ -79,7 +79,7 @@ let matmul n1 n2 ?(prefix="") gr =
   let size = begin
     if List.length n1.size = 2 && List.length n2.size = 2 && (List.nth n1.size 1) = (List.hd n2.size)
     then [List.hd n1.size; List.nth n2.size 1]
-    else failwith "Invalid dimensions"
+    else failwith ("Invalid dimensions for matmul " ^ n1.id ^ " " ^ n2.id)
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
@@ -92,7 +92,7 @@ let add n1 n2 ?(prefix="") gr =
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
-    else failwith "Invalid dimensions"
+    else failwith  ("Invalid dimensions for add " ^ n1.id ^ " " ^ n2.id)
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
@@ -105,7 +105,7 @@ let squared_loss n1 n2 ?(prefix="") gr =
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
-    else failwith "Invalid dimensions"
+    else failwith  ("Invalid dimensions for sqloss " ^ n1.id ^ " " ^ n2.id)
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
@@ -139,7 +139,7 @@ let minus n1 n2 ?(prefix="") gr =
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
-    else failwith "Invalid dimensions"
+    else failwith  ("Invalid dimensions for minus" ^ n1.id ^ " " ^ n2.id)
   end in
   ({id=id; nodetype=nodetype; size=size}, gr')
 
