@@ -47,7 +47,8 @@ let gen_id nt ?(prefix="") gr =
   let gr' = if num = 0 then {nc = (name,0)::gr.nc} else
     {nc = (List.map f (gr.nc))}
   in
-  ((prefix ^ name ^ "_" ^ (string_of_int num)), gr')
+  let prefix' = if prefix = "" then "" else prefix ^ "_" in
+  ((prefix' ^ name ^ "_" ^ (string_of_int num)), gr')
 
 (* Helper function. Returns true iff a nodetype in nodetypes is an optimizer *)
 let contains_optimizer nodetypes =
