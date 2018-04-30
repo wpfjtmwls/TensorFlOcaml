@@ -1,6 +1,6 @@
 open Owl
 open List
-open Node.Node
+open Tfnode
 
 (* Graph state object *)
 module GraphState = struct

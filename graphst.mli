@@ -1,5 +1,5 @@
 open Owl
-open Node.Node
+open Tfnode
 
 (* Graph state object *)
 module GraphState : sig 

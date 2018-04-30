@@ -1,6 +1,6 @@
 open Owl
 open Graphst
-open Node.Node
+open Tfnode
 
 module Graph : sig
 (* type t is a type of Graph *)

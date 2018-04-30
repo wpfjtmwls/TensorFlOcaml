@@ -1,6 +1,6 @@
 open Owl
 open Graphst.GraphState
-open Node.Node
+open Tfnode
 
 let testmode = true
 
