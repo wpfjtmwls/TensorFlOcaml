@@ -1,5 +1,6 @@
 open Owl
 open Graphst
+open Node
 
 module Graph : sig
 (* type t is a type of Graph *)
@@ -7,14 +8,6 @@ module Graph : sig
 
   (* type empty is empty type of Graph *)
   val empty : t
-
-  (* type nodetype is a type of node eg Placeholder, Variable, Operation, Optimizer *)
-  type nodetype
-
-  type dims = int list
-
-  (* type node is a record with id and nodetype *)
-  type node = {id: string; nodetype: nodetype; size: dims;}
 
   (* ------------ Node Creation --------------- *)
 

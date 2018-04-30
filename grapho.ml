@@ -1,58 +1,17 @@
 open Owl
 open Graphst.GraphState
+open Node
 
 let testmode = true
 
 module Graph = struct
-type node_counts = {
-  nVar: int;
-  nPlaceholder: int; 
-  nMatmul: int;
-  nAdd: int;
-  nSquareLoss: int;
-  nSigmoid: int;
-  nGradDesc: int;
-  nT: int;
-  nMinus: int;
-  nPow: int;
-}
 
-type dims = int list
-
-type oper =
-  | MatMul of (node * node)
-  | Add of (node * node)
-  | Minus of (node * node)
-  | SquareLoss of (node * node)
-  | Sigmoid of node
-  | T of node
-  | Pow of (node * float)
-
-and optm = 
-  | GradDesc of float
-
-and nodetype =
-  | Placeholder
-  | Variable
-  | Operation of oper
-  | Optimizer of (optm * node)
-
-and node = {id: string; nodetype: nodetype; size: dims;}
+(* maps string_of_node values to number of occurances (0 actually means 1 occurance) *)
+type node_counts = (string * int) list 
 
 type t = {nc: node_counts;}
 
-let empty ={nc = {
-              nVar = 0;
-              nPlaceholder = 0;
-              nMatmul = 0;
-              nAdd = 0;
-              nSquareLoss = 0;
-              nSigmoid = 0;
-              nGradDesc = 0;
-              nT = 0;
-              nMinus = 0;
-              nPow = 0;
-            }}
+let empty = {nc = []}
 
 (* ------------ Helper Functions --------------- *)
 
@@ -72,7 +31,7 @@ let dims_of_shape sh =
   Array.fold_left f [] sh
 
 (* Helper function. Converts nodetype to string. *)    
-let to_string = function
+let string_of_nodetype = function
   | Placeholder -> "PH"
   | Variable -> "VAR"
   | Operation o -> begin
@@ -88,43 +47,20 @@ let to_string = function
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
-(* Helper function. Gets appropriate value from node_counts *)
-let get_node_count nc = function
-  | Placeholder -> nc.nPlaceholder
-  | Variable -> nc.nVar
-  | Operation o -> begin
-    match o with
-    | MatMul _ -> nc.nMatmul
-    | Add _ -> nc.nAdd
-    | SquareLoss _ -> nc.nSquareLoss
-    | Sigmoid _ -> nc.nSigmoid
-    | T _ -> nc.nT
-    | Minus _ -> nc.nMinus
-    | Pow _ -> nc.nPow
-  end
-  | Optimizer (o, _) -> (match o with
-    | GradDesc _ -> nc.nGradDesc)
-
-(* Helper function. Returns nc with the appropriate value incremented *)
-let incr_node_count nc = function
-  | Placeholder -> {nc with nPlaceholder = nc.nPlaceholder + 1}
-  | Variable  -> {nc with nVar = nc.nVar + 1}
-  | Operation o -> begin
-    match o with
-    | MatMul _ -> {nc with nMatmul = nc.nMatmul + 1}
-    | Add _ -> {nc with nAdd = nc.nAdd + 1}
-    | SquareLoss _ -> {nc with nSquareLoss = nc.nSquareLoss + 1}
-    | Sigmoid _ -> {nc with nSigmoid = nc.nSigmoid + 1}
-    | T _ -> {nc with nT = nc.nT + 1}
-    | Minus _ -> {nc with nMinus = nc.nMinus + 1}
-    | Pow _ -> {nc with nPow = nc.nPow + 1}
-  end
-  | Optimizer (o, _) -> (match o with
-    | GradDesc _ -> {nc with nGradDesc = nc.nGradDesc + 1})
-
 (* Helper function. Converts nodetype and graph to id and new graph *)
 let gen_id nt gr =
-  to_string nt ^ "_" ^ string_of_int (get_node_count gr.nc nt), {nc= incr_node_count gr.nc nt}
+  let name = string_of_nodetype nt in
+  let num = match List.assoc_opt name gr.nc with
+  | None -> 0
+  | Some x -> x + 1 in
+  let gr' = if num = 0 then {nc = (name,0)::gr.nc} else begin
+    let f = fun (k,v) -> begin
+      if k = name then (k, num)
+      else (k,v)
+    end in
+    {nc = List.map f gr.nc}
+  end in
+  name ^ "_" ^ (string_of_int num), gr'
 
 (* Helper function. Returns true iff a nodetype in nodetypes is an optimizer *)
 let contains_optimizer nodetypes =
@@ -286,12 +222,8 @@ let rec forward n gr st =
         ar, add_node n.id ar st1
     end
   with ar, st ->
-    let () = assert begin
-      if testmode then
-        let ar_shape = Arr.shape ar in
-        dims_of_shape ar_shape = n.size
-      else true
-    end in ar, st
+    if testmode then assert (ar |> Arr.shape |> dims_of_shape = n.size);
+    ar, st
 
 let backward n gr st =
   (* Helper to backprop for gradient descent *)
