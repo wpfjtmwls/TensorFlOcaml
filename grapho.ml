@@ -9,26 +9,11 @@ module Graph = struct
 (* maps string_of_node values to number of occurances (0 actually means 1 occurance) *)
 type node_counts = (string * int) list 
 
-type t = {nc: node_counts;}
+type t = {nc: node_counts}
 
 let empty = {nc = []}
 
 (* ------------ Helper Functions --------------- *)
-
-(* Helper function. Convert dimension to string *)
-let string_of_dims dims =
-  let s = List.fold_left (fun ac el -> ac ^ "x" ^ (string_of_int el)) "" dims in
-  String.sub s 1 (String.length s - 1)
-
-(* Helper function. Convert Arr.shape to string *)
-let string_of_shape sh =
-  let s = Array.fold_left (fun ac el -> ac ^ "x" ^ (string_of_int el)) "" sh in
-  String.sub s 1 (String.length s - 1)
-
-(* Helper function. Converts Arr.shape to dims *)
-let dims_of_shape sh =
-  let f = fun ac el -> ac @ [el] in
-  Array.fold_left f [] sh
 
 (* Helper function. Converts nodetype to string. *)    
 let string_of_nodetype = function
@@ -48,7 +33,7 @@ let string_of_nodetype = function
     | GradDesc _ -> "GD")
 
 (* Helper function. Converts nodetype and graph to id and new graph *)
-let gen_id nt gr =
+let gen_id nt gr = (* optional prefix *)
   let name = string_of_nodetype nt in
   let num = match List.assoc_opt name gr.nc with
   | None -> 0
@@ -175,55 +160,51 @@ let grad_descent n gr =
   (* ------------ Runners --------------- *)
 
 let rec forward n gr st =
-  match
-    match n.nodetype with
-    | Placeholder | Variable -> get_node n.id st, st
-    | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
-    | Operation o -> begin
-      match o with
-      | MatMul (n1,n2) ->
-        let (a1, st1) = forward n1 gr st in
-        let (a2, st2) = forward n2 gr st in
-        (* let _ = Printf.printf "Running Matmul on %s matmul %s = %s\n" n1.id n2.id n.id; in *)
-        let ar = Arr.dot a1 a2 in
-        (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
-      | Add (n1, n2) ->
-        let (a1, st1) = forward n1 gr st in
-        let (a2, st2) = forward n2 gr st in
-        (* let _ = Printf.printf "Running Add on %s + %s = %s \n" n1.id n2.id n.id; in *)
-        let ar = Arr.add a1 a2 in
-        ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
-      | Minus (n1, n2) ->
-        let (a1, st1) = forward n1 gr st in
-        let (a2, st2) = forward n2 gr st in
-        (* let _ = Printf.printf "Running Minus on %s - %s = %s\n" n1.id n2.id n.id; in *)
-        let ar = Arr.(a1 - a2) in
-        ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
-      | SquareLoss (n1, n2) -> 
-        let (a1, st1) = forward n1 gr st in
-        let (a2, st2) = forward n2 gr st in
-        (* let _ = Printf.printf "Running Squareloss on sqloss(pred=%s, actual=%s) = %s\n" n1.id n2.id n.id; in *)
-        let ar = Arr.(pow_scalar (a1 - a2) 2.) in
-        ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
-      | Sigmoid n1 ->
-        let (a1, st1) = forward n1 gr st in
-        (* let _ = Printf.printf "Running Sigmoid on sigmoid(%s) = %s\n" n1.id n.id; in *)
-        let ar = Arr.sigmoid a1 in
-        ar, add_node n.id ar st1
-      | T a ->
-        let (a_val, st1) = forward a gr st in
-        (* let _ = Printf.printf "Running T on %s.T %s\n" a.id n.id; in *)
-        let ar = Arr.transpose a_val in
-        ar, add_node n.id ar st1
-      | Pow (a, p) ->
-        let (a_val, st1) = forward a gr st in
-        (* let _ = Printf.printf "Running Pow on %s ** %s = %s\n" a.id (string_of_float p) n.id; in *)
-        let ar = Arr.scalar_pow p a_val in
-        ar, add_node n.id ar st1
-    end
-  with ar, st ->
-    if testmode then assert (ar |> Arr.shape |> dims_of_shape = n.size);
-    ar, st
+  match n.nodetype with
+  | Placeholder | Variable -> get_node n.id st, st
+  | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
+  | Operation o -> begin
+    match o with
+    | MatMul (n1,n2) ->
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
+      (* let _ = Printf.printf "Running Matmul on %s matmul %s = %s\n" n1.id n2.id n.id; in *)
+      let ar = Arr.dot a1 a2 in
+      (ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar))
+    | Add (n1, n2) ->
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
+      (* let _ = Printf.printf "Running Add on %s + %s = %s \n" n1.id n2.id n.id; in *)
+      let ar = Arr.add a1 a2 in
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+    | Minus (n1, n2) ->
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
+      (* let _ = Printf.printf "Running Minus on %s - %s = %s\n" n1.id n2.id n.id; in *)
+      let ar = Arr.(a1 - a2) in
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+    | SquareLoss (n1, n2) -> 
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
+      (* let _ = Printf.printf "Running Squareloss on sqloss(pred=%s, actual=%s) = %s\n" n1.id n2.id n.id; in *)
+      let ar = Arr.(pow_scalar (a1 - a2) 2.) in
+      ar, ((merge_graphstates [st1; st2] st) |> add_node n.id ar)
+    | Sigmoid n1 ->
+      let (a1, st1) = forward n1 gr st in
+      (* let _ = Printf.printf "Running Sigmoid on sigmoid(%s) = %s\n" n1.id n.id; in *)
+      let ar = Arr.sigmoid a1 in
+      ar, add_node n.id ar st1
+    | T a ->
+      let (a_val, st1) = forward a gr st in
+      (* let _ = Printf.printf "Running T on %s.T %s\n" a.id n.id; in *)
+      let ar = Arr.transpose a_val in
+      ar, add_node n.id ar st1
+    | Pow (a, p) ->
+      let (a_val, st1) = forward a gr st in
+      (* let _ = Printf.printf "Running Pow on %s ** %s = %s\n" a.id (string_of_float p) n.id; in *)
+      let ar = Arr.scalar_pow p a_val in
+      ar, add_node n.id ar st1
+  end
 
 let backward n gr st =
   (* Helper to backprop for gradient descent *)
