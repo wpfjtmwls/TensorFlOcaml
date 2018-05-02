@@ -1,4 +1,6 @@
 open Jaynet
 open Alexnet
+open Tfchain
+open Tf
 
-module Jalexnet = Chain(Jaynet)(Alexnet)
+module Jalexnet : SUBGRAPH = Chain(JayNet)(AlexNet)
