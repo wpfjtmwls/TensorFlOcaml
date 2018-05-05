@@ -6,7 +6,7 @@ let testmode = true
 
 module Graph = struct
 
-(* maps string_of_node values to number of occurances (0 actually means 1 occurance) *)
+(* maps node-types (string_of_node values) to number of occurances (0 actually means 1 occurance) *)
 type node_counts = (string * int) list
 
 (* maps node ids to list of node ids that it feeds into
@@ -18,10 +18,12 @@ type node_counts = (string * int) list
  * pointing to the empty list, and all its input nodes get mapped to it.
  *)
 type id_map = (string * string list) list
+type id_list = string list
 
-type t = {nc: node_counts; idm: id_map}
+(* inp_ids is list of ids of placeholder and variables *)
+type t = {nc: node_counts; inp_ids: id_list; idm: id_map}
 
-let empty = {nc = []; idm = []}
+let empty = {nc = []; inp_ids = []; idm = []}
 
 (* ------------ Helper Functions --------------- *)
 
@@ -74,7 +76,16 @@ let new_id_map n in_lst idm =
     (inp, n::l)::(List.remove_assoc inp acc)
   in
   (n,[]) :: (List.fold_left f idm in_lst)
-  
+
+(* ------------ Structure Querying --------------- *)
+let get_consumer_list gr = gr.idm
+
+let get_input_node_ids gr = gr.inp_ids
+
+let get_output_node_ids gr =
+  let p = fun (_, l) -> l = [] in
+  let m = fun (id, _) -> id in
+  gr.idm |> List.filter p |> List.map m
 
 (* ------------ Node Creation --------------- *)
 
@@ -82,13 +93,13 @@ let variable dims ?(prefix="") gr =
   let nodetype = Variable in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=dims} in
-  (node, {nc=nc'; idm = new_id_map id [] gr.idm})
+  (node, {nc=nc'; inp_ids = id::gr.inp_ids; idm = new_id_map id [] gr.idm})
 
 let placeholder dims ?(prefix="") gr =
   let nodetype = Placeholder in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=dims} in
-  (node, {nc=nc'; idm = new_id_map id [] gr.idm})
+  (node, {nc=nc'; inp_ids = id::gr.inp_ids; idm = new_id_map id [] gr.idm})
 
 let matmul n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -102,7 +113,7 @@ let matmul n1 n2 ?(prefix="") gr =
     else failwith ("Invalid dimensions for matmul " ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
 
 let add n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -116,7 +127,7 @@ let add n1 n2 ?(prefix="") gr =
     else failwith  ("Invalid dimensions for add " ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
 
 let squared_loss n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -130,7 +141,7 @@ let squared_loss n1 n2 ?(prefix="") gr =
     else failwith  ("Invalid dimensions for sqloss " ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
 
 let sigmoid n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -139,7 +150,7 @@ let sigmoid n ?(prefix="") gr =
   let nodetype = Operation (Sigmoid n) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=n.size} in
-  (node, {nc=nc'; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
 
 let trans n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -153,7 +164,7 @@ let trans n ?(prefix="") gr =
     else failwith "Invalid dimensions"
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
 
 let minus n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -167,7 +178,7 @@ let minus n1 n2 ?(prefix="") gr =
     else failwith  ("Invalid dimensions for minus" ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
 
 let pow n power ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -177,7 +188,7 @@ let pow n power ?(prefix="") gr =
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n.size in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
 
 let grad_descent n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -186,9 +197,9 @@ let grad_descent n ?(prefix="") gr =
   let nodetype = Optimizer (GradDesc(0.0001), n) in (* TODO: change learning rate *)
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=[]} in
-  (node, {nc=nc'; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
 
-  (* ------------ Runners --------------- *)
+(* ------------ Runners --------------- *)
 
 let rec forward n gr st =
   match n.nodetype with
