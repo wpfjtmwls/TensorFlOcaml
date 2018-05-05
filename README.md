@@ -58,27 +58,27 @@ echo 'export PATH="/usr/local/opt/icu4c/bin:$PATH"' >> ~/.zshrc
 echo 'export PATH="/usr/local/opt/icu4c/sbin:$PATH"' >> ~/.zshrc
 ```
 Replace ".zshrc" with ".bashrc" if you use bash instead of zshrc. 
-4. Once you've done that, run
+5. Once you've done that, run
 ```bash
 opam install plplot
 ```
 should work. 
-5. Finally run within the owl directory
+6. Finally run within the owl directory
 ```bash
 cd ~/.opam/packages/owl
 make && make install
 ```
-6. If you get issues during this such as "Assertion Failed Backtrace", then run 
+7. If you get issues during this such as "Assertion Failed Backtrace", then run 
 ```bash
 jbuilder build @install
 ```
 and see if it returns any external libraries. If it does, you'll need to install those. 
 
-7. If this works you should be able to run 
+8. If this works you should be able to run 
 ```bash
 #require "owl-top"
 ```
 in utop succsessfully. 
-8. You made it! You're ready to get started with TensorFlowcaml
+9. You made it! You're ready to get started with TensorFlowcaml
 
 ## Use
