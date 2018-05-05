@@ -7,6 +7,7 @@
 * Opam
 * Utop  
 * Cmake
+* Camlimages (for image loading)
 * Pkg-config
 * Plplot
 * Owl Numerical Library
@@ -61,6 +62,7 @@ Replace ".zshrc" with ".bashrc" if you use bash instead of zshrc.
 5. Once you've done that, run
 ```bash
 opam install plplot
+opam install camlimages
 ```
 should work. 
 6. Finally run within the owl directory

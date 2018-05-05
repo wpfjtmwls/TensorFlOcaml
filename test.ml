@@ -27,7 +27,11 @@ let loss_test, st = Graph.forward loss graph graphstate
 let y_pred, st = Graph.forward s2 graph graphstate
 let y_actual, st = Graph.forward label graph graphstate
 let new_st, losslist = Graph.backward optimizer graph graphstate
-let loss_trained, st = Graph.forward loss graph new_st
+let loss_trained, st_losstrained = Graph.forward loss graph new_st
+
+(* Tests for saving of simple graphstate *)
+let _ = GraphState.save_graphst new_st "tests/saved-graphstates"
+let loaded_graphstate_losstrained = GraphState.load_graphst "tests/saved-graphstates"
 
 (* Simple chained graph replicating the above simple graph with chaining *)
 let graph = Graph.empty
@@ -40,6 +44,12 @@ let graphstate = GraphState.(graphst
 let loss_test2, st = Graph.forward loss graph graphstate
 
 
+let mat_to_string ar =
+  let array = Arr.to_array ar in
+  Array.fold_left (fun acc i -> acc ^ " " ^ (string_of_float i)) "" array
+
+let state_to_string st =
+  GraphState.graphst_to_string st mat_to_string
 
 let tests_mat = [
   (* ("Hidden_1", (h1_test, "A=[4x10],x=[5x4], xA=[5x10]"), " 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2."); *)
@@ -56,14 +66,8 @@ let tests_mat = [
 
 let tests_state = [
   (* ("backward", (new_st, "new_state"), ""); *)
+  ("save-loading graphstates", (loaded_graphstate_losstrained, "graphstate before saving and loading = graphstate after saving and loading"), (state_to_string new_st));
 ]
-
-let mat_to_string ar =
-  let array = Arr.to_array ar in
-  Array.fold_left (fun acc i -> acc ^ " " ^ (string_of_float i)) "" array
-
-let state_to_string st =
-  GraphState.graphst_to_string st mat_to_string
 
 let make_tests t (result, in_str) out_str stringify =
   ("\n########################### " ^ t ^ " ##################################\n\n    "
