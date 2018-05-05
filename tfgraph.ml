@@ -1,6 +1,7 @@
 open Owl
 open Tfgraphst.GraphState
 open Tfnode
+open Yojson.Basic.Util
 
 let testmode = true
 
@@ -68,7 +69,10 @@ let new_output_list (n:node) (in_lst:node list) (ol:node list) =
 
 (* ------------ Load and Save --------------- *)
 
-  let save gr path = 
+  let save gr path =
+    let str = {|{"graph:{"|} in
+    let str = str ^ {|}}|} in
+
     failwith "unimp"
 
   let load path = 

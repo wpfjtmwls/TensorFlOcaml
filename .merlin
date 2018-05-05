@@ -5,3 +5,4 @@ PKG lwt
 PKG react
 PKG lambda-term
 PKG owl
+PKG yojson

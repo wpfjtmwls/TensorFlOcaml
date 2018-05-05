@@ -17,6 +17,7 @@ let (x, graph) =          graph |> Graph.placeholder [5;4]
 let (s2, graph, graphst) = JayNet.create [x] (JayNet.default_name) graph graphst
 let (label, graph) =      graph |> Graph.placeholder [5;1]
 let (loss, graph) =       graph |> Graph.squared_loss s2 label
+let (testol, graph) =     graph |> Graph.sigmoid x (* used for testing graph.t.ol *)
 let (optimizer, graph) =  graph |> Graph.grad_descent loss
 let graphstate = GraphState.(graphst
                    |> add_node x (Arr.ones [|5;4|])
