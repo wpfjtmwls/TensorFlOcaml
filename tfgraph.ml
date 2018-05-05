@@ -94,15 +94,33 @@ let nodes_in_save_order (output_nodes:node list) =
   List.rev (List.fold_left 
     (fun acc output_node -> merge_nodelists acc (nodes_in_save_order_singlenode output_node)) [] output_nodes)
 
-  
+(* Helper. [get_params n] returns an (ordered) list of the inputs to n  *)
+let get_params n : node list =
+  match n.nodetype with
+  | Placeholder | Variable -> []
+  | Optimizer o -> [snd o]
+  | Operation o -> begin
+    match o with
+    | MatMul (n1,n2) -> [n1;n2]
+    | Add (n1, n2) -> [n1;n2]
+    | Minus (n1, n2) -> [n1;n2]
+    | SquareLoss (n1, n2) -> [n1;n2]
+    | Sigmoid n1 ->[n1]
+    | T n1 -> [n1]
+    | Pow (n1, p) -> [n1]
+  end
 
 (* ------------ Load and Save --------------- *)
 
   let save gr path =
-    let str = {|{"graph:{"|} in
-    let str = str ^ {|}}|} in
-
-    failwith "unimp"
+    let get_param_id_strings = fun (n:node) : Yojson.json ->
+      `List (List.map (fun x -> `String x.id) (get_params n)) in
+    let to_json_node = fun (n:node) : Yojson.json -> 
+      `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
+      ("params", get_param_id_strings n)] in
+    let ns = nodes_in_save_order gr.ol in
+    let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
+    Yojson.to_file (path ^ ".tfgraph") json
 
   let load path = 
     failwith "unimp"
