@@ -6,22 +6,16 @@ module Graph : sig
   
   (* type t is a type of Graph *)
   type t
-  type id_map = (string * string list) list
-  type id_list = string list
 
-  (* type empty is empty type of Graph *)
   val empty : t
 
-  (* ------------ Structure Querying --------------- *)
+  (* ------------ Load and Save --------------- *)
 
-  (* [get_consumer_list gr] returns an id_map which maps each node n to a list of nodes which use n as an input. *)
-  val get_consumer_list : t -> id_map
+  (* [save gr path] writes gr to a save file at path *)
+  val save : t -> string -> unit
 
-  (* [get_input_node_ids gr] returns an id_list of all the placeholder and variable nodes *)
-  val get_input_node_ids : t -> id_list
-
-  (* [get_output_node_ids gr] returns an id_list of all nodes with no consumers *)
-  val get_output_node_ids : t -> id_list
+  (* [load path] loads the save file at path and returns a graph *)
+  val load : string -> t
 
   (* ------------ Node Creation --------------- *)
 

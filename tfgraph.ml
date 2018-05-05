@@ -9,21 +9,12 @@ module Graph = struct
 (* maps node-types (string_of_node values) to number of occurances (0 actually means 1 occurance) *)
 type node_counts = (string * int) list
 
-(* maps node ids to list of node ids that it feeds into
- * e.g.   var_0  -> sigmoid_0
- *              \--> sigmoid_1
- * graph maps 'var_0' to ['sigmoid_0';'sigmoid_1'].
- 
- * Invariant: when a new node is added to the graph, it is added to the id_map,
- * pointing to the empty list, and all its input nodes get mapped to it.
- *)
-type id_map = (string * string list) list
-type id_list = string list
+(* nc is a node_counts representing the 'namespace'
+ * ol is a list of output nodes
+ * nm is a nodemap (maps id to node) *)
+type t = {nc: node_counts; ol: node list; nm : (string * node) list}
 
-(* inp_ids is list of ids of placeholder and variables *)
-type t = {nc: node_counts; inp_ids: id_list; idm: id_map}
-
-let empty = {nc = []; inp_ids = []; idm = []}
+let empty = {nc = []; ol = []; nm = []}
 
 (* ------------ Helper Functions --------------- *)
 
@@ -67,25 +58,21 @@ let contains_optimizer nodetypes =
     | _ -> false in
   List.exists is_opt nodetypes
 
-(* Returns a modified version of idm with n mapped to [] and each element of
- * in_lst mapping to n::l where l is its original mapping in idm.
- * Precondition: idm invariant holds *)
-let new_id_map n in_lst idm =
-  let f = fun acc inp -> 
-    let l = List.assoc inp acc in
-    (inp, n::l)::(List.remove_assoc inp acc)
-  in
-  (n,[]) :: (List.fold_left f idm in_lst)
+(* Returns a modified version of output_list after adding node n to the graph.
+ * in_list represents the list of nodes feeding into n as inputs. *)
+let new_output_list (n:node) (in_lst:node list) (ol:node list) =
+  let p = fun x ->
+    let e = fun y -> x = y in
+    not (List.exists e in_lst) in
+  n :: List.filter p ol
 
-(* ------------ Structure Querying --------------- *)
-let get_consumer_list gr = gr.idm
+(* ------------ Load and Save --------------- *)
 
-let get_input_node_ids gr = gr.inp_ids
+  let save gr path = 
+    failwith "unimp"
 
-let get_output_node_ids gr =
-  let p = fun (_, l) -> l = [] in
-  let m = fun (id, _) -> id in
-  gr.idm |> List.filter p |> List.map m
+  let load path = 
+    failwith "unimp"
 
 (* ------------ Node Creation --------------- *)
 
@@ -93,13 +80,13 @@ let variable dims ?(prefix="") gr =
   let nodetype = Variable in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=dims} in
-  (node, {nc=nc'; inp_ids = id::gr.inp_ids; idm = new_id_map id [] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [] gr.ol})
 
 let placeholder dims ?(prefix="") gr =
   let nodetype = Placeholder in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=dims} in
-  (node, {nc=nc'; inp_ids = id::gr.inp_ids; idm = new_id_map id [] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [] gr.ol})
 
 let matmul n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -113,7 +100,7 @@ let matmul n1 n2 ?(prefix="") gr =
     else failwith ("Invalid dimensions for matmul " ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
 let add n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -127,7 +114,7 @@ let add n1 n2 ?(prefix="") gr =
     else failwith  ("Invalid dimensions for add " ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
 let squared_loss n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -141,7 +128,7 @@ let squared_loss n1 n2 ?(prefix="") gr =
     else failwith  ("Invalid dimensions for sqloss " ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
 let sigmoid n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -150,7 +137,7 @@ let sigmoid n ?(prefix="") gr =
   let nodetype = Operation (Sigmoid n) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=n.size} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
 let trans n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -164,7 +151,7 @@ let trans n ?(prefix="") gr =
     else failwith "Invalid dimensions"
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
 let minus n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
@@ -178,7 +165,7 @@ let minus n1 n2 ?(prefix="") gr =
     else failwith  ("Invalid dimensions for minus" ^ n1.id ^ " " ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n1.id;n2.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
 let pow n power ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -188,7 +175,7 @@ let pow n power ?(prefix="") gr =
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n.size in
   let node = {id=id; nodetype=nodetype; size=size} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
 let grad_descent n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -197,7 +184,7 @@ let grad_descent n ?(prefix="") gr =
   let nodetype = Optimizer (GradDesc(0.0001), n) in (* TODO: change learning rate *)
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=[]} in
-  (node, {nc=nc'; inp_ids = gr.inp_ids; idm = new_id_map id [n.id] gr.idm})
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
 (* ------------ Runners --------------- *)
 
