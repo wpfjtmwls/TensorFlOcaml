@@ -11,7 +11,7 @@ type oper =
   | T of node
   | Pow of (node * float)
 
-and optm = 
+and optm =
   | GradDesc of float
 
 and nodetype =
