@@ -31,4 +31,11 @@ module GraphState : sig
 
  (* Returns string representation of state *)
  val graphst_to_string : st -> (Arr.arr -> string) -> string
+
+(* Saves a graph state into the specified folder as *.tfgraphst files *)
+val save_graphst : st -> string -> unit
+
+(* Loads a graph state from the specified folder from all *.tfgraphst files *)
+val load_graphst : string -> st
+
 end
