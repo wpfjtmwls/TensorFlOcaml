@@ -3,6 +3,8 @@ open Owl
 open Tfgraph
 open Tfgraphst
 open Jaynet
+open Jalexnet
+
 
 (* OCaml allows {|...|} as a syntax for strings in which the ...
    can contain unescaped quotes.  This is super useful for
@@ -26,6 +28,18 @@ let y_actual, st = Graph.forward label graph graphstate
 let new_st, losslist = Graph.backward optimizer graph graphstate
 let loss_trained, st = Graph.forward loss graph new_st
 
+(* Simple chained graph replicating the above simple graph with chaining *)
+let graph = Graph.empty
+let graphst = GraphState.empty
+let (x, graph) =          graph |> Graph.placeholder [5;4]
+let (loss, graph, graphst) = Jalexnet.create [x] (Jalexnet.default_name) graph graphst
+let graphstate = GraphState.(graphst
+                   |> add_node x (Arr.ones [|5;4|])
+)
+let loss_test2, st = Graph.forward loss graph graphstate
+
+
+
 let tests_mat = [
   (* ("Hidden_1", (h1_test, "A=[4x10],x=[5x4], xA=[5x10]"), " 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2."); *)
   (* ("Sigmoid_1", (s1_test, "H1=[5x10], s1=[5x10]"), " 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978"); *)
@@ -33,6 +47,10 @@ let tests_mat = [
   ("y_actual", (y_actual, "y_actual placeholder=[5x1]"), " 1. 1. 1. 1. 1.");
   ("y_pred", (y_pred, "y_pred=[5x1]"), " 0.987919222585 0.987919222585 0.987919222585 0.987919222585 0.987919222585");
   ("trained_loss", (loss_trained, "trained loss"), " 0.000145941911639 0.000145941911639 0.000145941911639 0.000145941911639 0.000145941911639");
+
+  (* test for Chaining *)
+  ("loss_2", (loss_test2, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
+
 ]
 
 let tests_state = [

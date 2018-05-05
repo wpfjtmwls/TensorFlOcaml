@@ -6,6 +6,6 @@ module Fileio = struct
 
   let export_graph str gr n = ()
 
-  let import_graph str = Graph.empty, Node.empty
+  let import_graph str = Graph.empty, Tfnode.empty
 
 end

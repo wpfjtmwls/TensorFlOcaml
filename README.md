@@ -7,6 +7,7 @@
 * Opam
 * Utop  
 * Cmake
+* Camlimages (for image loading)
 * Pkg-config
 * Plplot
 * Owl Numerical Library
@@ -38,7 +39,7 @@ what you're missing.
 ```bash 
 jbuilder external-lib-deps --missing @install
 ```
-3. Most likely you'll still be missing some dependencies. One is called Plplot. Confusion may stem from trying to install Plplot via opam. Turns out, ocamls plplot
+4. Most likely you'll still be missing some dependencies. One is called Plplot. Confusion may stem from trying to install Plplot via opam. Turns out, ocamls plplot
 depends on the plplot software, which you'll need to install from http://plplot.sourceforge.net/downloads.php or if you're on mac. 
 ```bash 
 brew install cmake
@@ -58,27 +59,28 @@ echo 'export PATH="/usr/local/opt/icu4c/bin:$PATH"' >> ~/.zshrc
 echo 'export PATH="/usr/local/opt/icu4c/sbin:$PATH"' >> ~/.zshrc
 ```
 Replace ".zshrc" with ".bashrc" if you use bash instead of zshrc. 
-4. Once you've done that, run
+5. Once you've done that, run
 ```bash
 opam install plplot
+opam install camlimages
 ```
 should work. 
-5. Finally run within the owl directory
+6. Finally run within the owl directory
 ```bash
 cd ~/.opam/packages/owl
 make && make install
 ```
-6. If you get issues during this such as "Assertion Failed Backtrace", then run 
+7. If you get issues during this such as "Assertion Failed Backtrace", then run 
 ```bash
 jbuilder build @install
 ```
 and see if it returns any external libraries. If it does, you'll need to install those. 
 
-7. If this works you should be able to run 
+8. If this works you should be able to run 
 ```bash
 #require "owl-top"
 ```
 in utop succsessfully. 
-8. You made it! You're ready to get started with TensorFlowcaml
+9. You made it! You're ready to get started with TensorFlowcaml
 
 ## Use

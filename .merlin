@@ -1,6 +1,8 @@
 B _build
+B _build/tests
 PKG oUnit
 PKG lwt
 PKG react
 PKG lambda-term
 PKG owl
+PKG camlimages
