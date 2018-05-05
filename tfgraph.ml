@@ -67,6 +67,35 @@ let new_output_list (n:node) (in_lst:node list) (ol:node list) =
     not (List.exists e in_lst) in
   n :: List.filter p ol
 
+(* Helper function. Returns nodes in order required for saving and loading
+ * Returns: [n1, n2, ...] where the nodes required to instantiate n_i have
+ *          indices < i *)
+let nodes_in_save_order (output_nodes:node list) =
+  let rec nodes_in_save_order_singlenode node =
+    match node.nodetype with
+    | Placeholder -> [node]
+    | Variable -> [node]
+    | Optimizer (opt, loss) -> node::(nodes_in_save_order_singlenode node)
+    | Operation o -> begin
+      match o with
+      | MatMul(n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
+      | Add(n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
+      | Minus(n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
+      | SquareLoss(n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
+      | Sigmoid n1 -> node::(nodes_in_save_order_singlenode n1)
+      | T n1 -> node::(nodes_in_save_order_singlenode n1)
+      | Pow (n1, _) -> node::(nodes_in_save_order_singlenode n1)
+    end
+  in
+  let merge_nodelists oldlist newlist =
+    (List.fold_left (fun acc node -> if not (List.mem node oldlist) then node::acc else acc) [] newlist)
+    @ oldlist
+  in
+  List.rev (List.fold_left 
+    (fun acc output_node -> merge_nodelists acc (nodes_in_save_order_singlenode output_node)) [] output_nodes)
+
+  
+
 (* ------------ Load and Save --------------- *)
 
   let save gr path =
