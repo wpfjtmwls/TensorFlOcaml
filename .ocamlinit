@@ -7,8 +7,8 @@
 #require "yojson";;
 
 (* Loads *)
-#load "graphst.cmo";;
-#load "grapho.cmo";;
+#load "tfgraphst.cmo";;
+#load "tfgrapho.cmo";;
 
 (* Styling *)
 #require "lambda-term";;

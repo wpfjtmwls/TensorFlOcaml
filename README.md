@@ -38,7 +38,7 @@ what you're missing.
 ```bash 
 jbuilder external-lib-deps --missing @install
 ```
-3. Most likely you'll still be missing some dependencies. One is called Plplot. Confusion may stem from trying to install Plplot via opam. Turns out, ocamls plplot
+4. Most likely you'll still be missing some dependencies. One is called Plplot. Confusion may stem from trying to install Plplot via opam. Turns out, ocamls plplot
 depends on the plplot software, which you'll need to install from http://plplot.sourceforge.net/downloads.php or if you're on mac. 
 ```bash 
 brew install cmake
