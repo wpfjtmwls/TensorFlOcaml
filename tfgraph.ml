@@ -75,7 +75,7 @@ let nodes_in_save_order (output_nodes:node list) =
     match node.nodetype with
     | Placeholder -> [node]
     | Variable -> [node]
-    | Optimizer (opt, loss) -> node::(nodes_in_save_order_singlenode node)
+    | Optimizer (opt, loss) -> node::(nodes_in_save_order_singlenode loss)
     | Operation o -> begin
       match o with
       | MatMul(n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
@@ -141,7 +141,7 @@ let placeholder dims ?(prefix="") gr =
 
 let matmul n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
-  then failwith "Cannot add node to optimizer"
+  then failwith "Cannot do a matmul on an optimizer"
   else
   let nodetype = Operation (MatMul (n1, n2)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
