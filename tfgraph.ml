@@ -118,9 +118,11 @@ let get_params n : node list =
   let save gr path =
     let get_param_id_strings = fun (n:node) : Yojson.json ->
       `List (List.map (fun x -> `String x.id) (get_params n)) in
+    let json_of_dims d =
+      `List (List.map (fun x -> `Int x) d) in
     let to_json_node = fun (n:node) : Yojson.json -> 
       `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
-      ("params", get_param_id_strings n)] in
+      ("size", json_of_dims n.size);("params", get_param_id_strings n)] in
     let ns = nodes_in_save_order gr.ol in
     let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
     Yojson.to_file (path ^ ".tfgraph") json
