@@ -33,6 +33,8 @@ let loss_trained, st_losstrained = Graph.forward loss graph new_st
 let _ = GraphState.save_graphst new_st "tests/saved-graphstates"
 let loaded_graphstate_losstrained = GraphState.load_graphst "tests/saved-graphstates"
 
+let _ = Graph.save graph "tests/saved-graphstates/graph"
+
 (* Simple chained graph replicating the above simple graph with chaining *)
 let graph = Graph.empty
 let graphst = GraphState.empty
