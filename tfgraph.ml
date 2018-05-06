@@ -110,6 +110,7 @@ let get_params n : node list =
     | Sigmoid n1 ->[n1]
     | T n1 -> [n1]
     | Pow (n1, p) -> [n1]
+    | Softmax n1 -> [n1]
   end
 
 (* ------------ Load and Save --------------- *)
