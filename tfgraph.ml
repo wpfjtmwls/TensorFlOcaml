@@ -90,7 +90,7 @@ let nodes_in_save_order (output_nodes:node list) =
     end
   in
   let merge_nodelists oldlist newlist =
-    (List.fold_left (fun acc node -> if not (List.mem node oldlist) then node::acc else acc) [] newlist)
+    (List.fold_right (fun node acc -> if not (List.mem node oldlist) then node::acc else acc) newlist [])
     @ oldlist
   in
   List.rev (List.fold_left 
