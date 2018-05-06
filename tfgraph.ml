@@ -32,6 +32,7 @@ let string_of_nodetype = function
     | T _ -> "T"
     | Minus _ -> "MINUS"
     | Pow _ -> "POW"
+    | Softmax _ -> "SOFTMAX"
   end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
@@ -85,6 +86,7 @@ let nodes_in_save_order (output_nodes:node list) =
       | Sigmoid n1 -> node::(nodes_in_save_order_singlenode n1)
       | T n1 -> node::(nodes_in_save_order_singlenode n1)
       | Pow (n1, _) -> node::(nodes_in_save_order_singlenode n1)
+      | Softmax n1 -> node::(nodes_in_save_order_singlenode n1)
     end
   in
   let merge_nodelists oldlist newlist =
@@ -266,6 +268,10 @@ let rec forward n gr st =
       (* let _ = Printf.printf "Running Pow on %s ** %s = %s\n" a.id (string_of_float p) n; in *)
       let ar = Arr.scalar_pow p a_val in
       ar, add_node n ar st1
+    | Softmax (a) ->
+      let (a_val, st1) = forward a gr st in
+      let ar = Arr.softmax a_val in
+      ar, add_node n ar st1
   end
 
   (* Backward runners *)
@@ -312,6 +318,9 @@ let rec forward n gr st =
         let a_val = st |> get_node a in
         let p_minus_1 = p -. 1. in
         backprop_graddesc a Arr.(pow_scalar (mul_scalar a_val p) (p_minus_1)) lr st
+      | Softmax a ->
+        let sm = st |> get_node node in
+        backprop_graddesc a Arr.((grad - (sum (grad * sm) ~axis:1)) * sm) lr st
     end
 
 let rec backward_helper opt loss_node graph graphstate loss_list n =
