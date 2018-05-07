@@ -11,6 +11,10 @@ type oper =
   | T of node
   | Pow of (node * float)
   | Softmax of node
+  | Negative of node
+  | ReduceSum of (node * int)
+  | Mul of (node * node)
+  | Log of (node)
 
 and optm =
   | GradDesc of float

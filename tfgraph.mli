@@ -53,6 +53,13 @@ module Graph : sig
   *)
   val squared_loss : node -> node -> ?prefix:string -> t -> (node * t)
 
+  (* [softmax] takes one node and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : one node and a graph. Node should be [n;1] dimensional
+  * Node cannot be optimizer.
+  * [outputs] : a new node that is the calculation of the softmax function between two nodes and a graph where the new node was added
+  *)
+  val softmax : node -> ?prefix:string -> t -> (node * t)
+
   (* [sigmoid] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node cannot be an optimizer.
   * [outputs] : a new node that is the output of sigmoid function of the input node and a graph where the new node was added

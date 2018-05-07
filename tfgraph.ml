@@ -33,6 +33,10 @@ let string_of_nodetype = function
     | Minus _ -> "MINUS"
     | Pow _ -> "POW"
     | Softmax _ -> "SOFTMAX"
+    | Negative _ -> "NEG"
+    | ReduceSum _ -> "REDUCESUM"
+    | Mul _ -> "ELMUL"
+    | Log _ -> "LOG"
   end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
@@ -87,6 +91,10 @@ let nodes_in_save_order (output_nodes:node list) =
       | T n1 -> node::(nodes_in_save_order_singlenode n1)
       | Pow (n1, _) -> node::(nodes_in_save_order_singlenode n1)
       | Softmax n1 -> node::(nodes_in_save_order_singlenode n1)
+      | Negative n1 -> node::(nodes_in_save_order_singlenode n1)
+      | ReduceSum (n1, _) -> node::(nodes_in_save_order_singlenode n1)
+      | Mul (n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
+      | Log (n1) -> node::(nodes_in_save_order_singlenode n1)
     end
   in
   let merge_nodelists oldlist newlist =
@@ -111,6 +119,10 @@ let get_params n : node list =
     | T n1 -> [n1]
     | Pow (n1, p) -> [n1]
     | Softmax n1 -> [n1]
+    | Negative n1 -> [n1]
+    | ReduceSum (n1, axis) -> [n1]
+    | Mul (n1, n2) -> [n1;n2]
+    | Log (n1) -> [n1]
   end
 
 (* ------------ Load and Save --------------- *)
@@ -184,6 +196,18 @@ let squared_loss n1 n2 ?(prefix="") gr =
   let node = {id=id; nodetype=nodetype; size=size} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
+let softmax n1 ?(prefix="") gr =
+  if contains_optimizer [n1.nodetype]
+  then failwith "Cannot calculate softmax of optimizer"
+  else
+  let nodetype = Operation (Softmax (n1)) in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let size = if List.length n1.size = 2 && List.nth n1.size 2 <> 1 then 
+    failwith "Cannot calculate softmax of 2 dimensional array"
+    else n1.size in
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; nm=(id,node)::gr.nm; ol=new_output_list node [n1] gr.ol})
+
 let sigmoid n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
@@ -226,6 +250,50 @@ let pow n power ?(prefix="") gr =
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Pow (n, power)) in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let size = n.size in
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
+
+let neg n ?(prefix="") gr =
+  if contains_optimizer [n.nodetype]
+  then failwith "Cannot take negation of optimizer"
+  else
+  let nodetype = Operation (Negative (n)) in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let size = n.size in
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
+
+let reducesum n axis ?(prefix="") gr =
+  if contains_optimizer [n.nodetype]
+  then failwith "Cannot reduce sum on optimizer"
+  else
+  let nodetype = Operation (ReduceSum (n, axis)) in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let size = List.mapi (fun ind el -> if ind <> axis then el else 1) n.size in
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
+
+let mul n1 n2 ?(prefix="") gr =
+  if contains_optimizer [n1.nodetype;n2.nodetype]
+  then failwith "Cannot multiply an optimizer"
+  else
+  let nodetype = Operation (Mul (n1, n2)) in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let size = begin
+    if List.length n1.size = 2 && n1.size = n2.size
+    then n1.size
+    else failwith  ("Invalid dimensions for multiply" ^ n1.id ^ " " ^ n2.id)
+  end in
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
+
+let log n ?(prefix="") gr =
+  if contains_optimizer [n.nodetype]
+  then failwith "Cannot take negation of optimizer"
+  else
+  let nodetype = Operation (Log (n)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n.size in
   let node = {id=id; nodetype=nodetype; size=size} in
@@ -291,6 +359,23 @@ let rec forward n gr st =
       let (a_val, st1) = forward a gr st in
       let ar = Arr.softmax a_val in
       ar, add_node n ar st1
+    | Negative (a) ->
+      let (a_val, st1) = forward a gr st in
+      let ar = Arr.neg a_val in
+      ar, add_node n ar st1
+    | ReduceSum (a, ax) ->
+      let (a_val, st1) = forward a gr st in
+      let ar = Arr.sum_reduce ~axis:[|ax|] a_val in
+      ar, add_node n ar st1
+    | Mul (n1, n2) ->
+      let (a1, st1) = forward n1 gr st in
+      let (a2, st2) = forward n2 gr st in
+      let ar = Arr.mul a1 a2 in
+      ar, ((merge_graphstates [st1;st2] st |> add_node n ar))
+    | Log (n)->
+      let (a_val, st1) = forward n gr st in
+      let ar = Arr.log a_val in
+      ar, add_node n ar st1
   end
 
   (* Backward runners *)
@@ -340,6 +425,20 @@ let rec forward n gr st =
       | Softmax a ->
         let sm = st |> get_node node in
         backprop_graddesc a Arr.((grad - (sum (grad * sm) ~axis:1)) * sm) lr st
+      | Negative a ->
+        backprop_graddesc a (Arr.neg grad) lr st
+      | ReduceSum (a, ax) ->
+        let axsize = List.nth (a.size) ax in
+        backprop_graddesc a (Arr.repeat ~axis:ax grad axsize) lr st
+      | Mul (a, b) ->
+        let b_val = st |> get_node b in
+        let a_val = st |> get_node a in
+        let st1 = backprop_graddesc a (Arr.mul grad b_val) lr st in
+        let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
+        merge_graphstates [st1;st2] st
+      | Log a ->
+        let log_val = st |> get_node a in
+        backprop_graddesc a (Arr.div grad log_val) lr st
     end
 
 let rec backward_helper opt loss_node graph graphstate loss_list n =
