@@ -405,6 +405,16 @@ let log n ?(prefix="") gr =
   let node = {id=id; nodetype=nodetype; size=size} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
+let crossentropyloss pred truth ?(prefix="") gr =
+  if contains_optimizer [pred.nodetype;truth.nodetype]
+  then failwith "Cannot run cross entropy loss on optimizer"
+  else
+  let lognode, gr = log pred ~prefix:prefix gr in
+  let mulnode, gr = mul truth lognode ~prefix:prefix gr in
+  let reducesumnode1, gr = reducesum mulnode 1 ~prefix:prefix gr in
+  let reducesumnode2, gr = reducesum reducesumnode1 0 ~prefix:prefix gr in
+  neg reducesumnode2 ~prefix:prefix gr
+
 let grad_descent n ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"

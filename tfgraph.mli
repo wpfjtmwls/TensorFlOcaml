@@ -88,6 +88,40 @@ module Graph : sig
   *)
   val pow : node -> float -> ?prefix:string -> t -> (node * t)
 
+  (* [neg] takes a node, and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : a node and a graph. The node cannot be an optimizer.
+  * [outputs] : a new node that is the negation of the node and a graph where the new node was added
+  *)
+  val neg : node -> ?prefix:string -> t -> (node * t)
+
+  (* [reducesum] takes a node, an axis, and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : a node and a graph. The node cannot be an optimizer.
+  * [outputs] : a new node that is the sum of the old node along the specified axis
+       and a graph where the new node was added
+  *)
+  val reducesum : node -> int -> ?prefix:string -> t -> (node * t)
+
+  (* [reducesum] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : two nodes of same dimensions and a graph. The nodes cannot be an optimizer.
+  * [outputs] : a new node that is the element-wise multiplication of the input nodes
+       and a graph where the new node was added
+  *)
+  val mul : node -> node -> ?prefix:string -> t -> (node * t)
+
+  (* [log] takes a node and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : The node cannot be an optimizer.
+  * [outputs] : a new node that is the log of the input node
+       and a graph where the new node was added
+  *)
+  val log : node -> ?prefix:string -> t -> (node * t)
+
+  (* [crossentropyloss] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
+  * [requires] : first node is the output prediction and second node is the input label. Cannot be optimizer
+    nodes
+  * [outputs] : a new node that is the cross-entropy loss and a graph where the new node was added
+  *)
+  val crossentropyloss : node -> node -> ?prefix:string -> t -> (node * t)
+
   (* [grad_descent] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node cannot be an optimizer.
   * [outputs] : a new node with a specific optimizer and a graph where the new node was added
