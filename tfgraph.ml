@@ -37,6 +37,106 @@ let string_of_nodetype = function
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
+(* Helper function to get nodetype string from node map 
+ * [str_nt] : string representation of nodetype 
+ * [nm] : namespace for nodemap 
+ * precondition : the str_nt has already been declared *)
+let nt_from_nm str_nt nm = 
+  if List.mem_assoc str_nt nm then List.assoc str_nt nm 
+  else failwith "Exception: string Node has not been added to the nodemap"
+
+(* Reverse function of string_of_nodetype. Converts string to nodetype *)
+let nodetype_from_string str_nt params nm = 
+  match str_nt with 
+  | "PH" -> Placeholder
+  | "VAR" -> Variable
+  | "MM" -> 
+    let str_nt1 = List.nth params 0 in
+    let str_nt2 = List.nth params 1 in
+    let nd1 = nt_from_nm str_nt1 nm in 
+    let nd2 = nt_from_nm str_nt2 nm in
+    Operation (MatMul (nd1, nd2))
+  | "ADD" -> 
+    let str_nt1 = List.nth params 0 in
+    let str_nt2 = List.nth params 1 in
+    let nd1 = nt_from_nm str_nt1 nm in 
+    let nd2 = nt_from_nm str_nt2 nm in
+    Operation (Add (nd1, nd2))
+  | "MINUS" -> 
+    let str_nt1 = List.nth params 0 in
+    let str_nt2 = List.nth params 1 in
+    let nd1 = nt_from_nm str_nt1 nm in 
+    let nd2 = nt_from_nm str_nt2 nm in
+    Operation (Minus (nd1, nd2))
+  | "SL" -> 
+    let str_nt1 = List.nth params 0 in
+    let str_nt2 = List.nth params 1 in
+    let nd1 = nt_from_nm str_nt1 nm in 
+    let nd2 = nt_from_nm str_nt2 nm in
+    Operation (SquareLoss (nd1, nd2))
+  | "SIGH" -> Operation (Sigmoid (nt_from_nm (List.hd params) nm))
+  | "T" -> Operation (T (nt_from_nm (List.hd params) nm))
+  | "POW" -> failwith "Pow Unimplemented"
+  | "SOFTMAX" -> Operation (Softmax (nt_from_nm (List.hd params) nm))
+  | "GD" -> failwith "GD Unimplemented"
+  | _ -> failwith "Not a valid string representation of nodetype"
+  
+(* Define type for each node object expressed in json to be loaded *)
+type load_node = {
+  load_nodeid : string;
+  load_nodetype : string;
+  load_size : int list;
+  load_params : string list;
+}
+
+(* Load one single node object from json file *)
+let load_single_node obj = {
+  load_nodeid = obj |> member "node_id" |> to_string;
+  load_nodetype = obj |> member "nodetype" |> to_string;
+  load_size = obj |> member "size" |> to_list |> List.map to_int;
+  load_params = obj |> member "params" |> to_list |> List.map to_string;
+}
+
+(* parse json file to a list of load_node objects *)
+let load_nodes j = 
+  try j |> member "graphs" |> to_list |> List.map load_single_node
+  with Type_error (s, _) -> failwith ("Parsing error: " ^ s) 
+
+(* Create a node from load node information *)
+let make_node ln nm = {
+  id = ln.load_nodeid;
+  nodetype = (nodetype_from_string ln.load_nodetype ln.load_params nm);
+  size = ln.load_size;
+}
+
+(* Configure the new ol by checking if anynode in output node list is one of the params for other nodes *)
+let rec config_ol old_ol acc_params = 
+  List.fold_left (fun acc nd -> if List.exists (fun x -> x=nd.id) acc_params then acc else nd::acc) [] old_ol
+
+(* Update node count map according to the string nodetype *)
+let update_nc old_nc str_nt =
+    if List.mem_assoc str_nt old_nc then (str_nt,((List.assoc str_nt old_nc) + 1))::(List.remove_assoc str_nt old_nc) 
+    else (str_nt,0)::old_nc 
+
+(* Recursively make a graph from parsed load_node list *)
+let rec make_graph ln_lst acc_nc acc_ol acc_nm acc_params = 
+  match ln_lst with
+  | [] -> {nc = acc_nc; ol = config_ol acc_ol acc_params; nm = acc_nm;}
+  | ln::t -> 
+    (* make a node from load node *)
+    let nd = make_node ln acc_nm in
+    let new_nc = update_nc acc_nc nd.id in
+    let new_ol = nd::(acc_ol) in
+    let new_nm = (nd.id,nd)::(acc_nm) in
+    let new_params = ln.load_params @ acc_params in
+    make_graph t new_nc new_ol new_nm new_params
+
+(* Preprocessing helper function for [load] converts the path to json and parse *)
+let load_helper path = 
+  let json = Yojson.Basic.from_file path in
+  let ln_lst = load_nodes json in
+  make_graph ln_lst [] [] [] []
+
 (* Helper function. Converts nodetype and nodecounts to id and new nodecounts.
  * If prefix is set, the id will be prefixed by the prefix followed *)
 let gen_id nt ?(prefix="") (nc:node_counts) =
@@ -128,8 +228,8 @@ let get_params n : node list =
     Yojson.to_file (path ^ ".tfgraph") json
 
   let load path = 
-    failwith "unimp"
-
+    load_helper path
+    
 (* ------------ Node Creation --------------- *)
 
 let variable dims ?(prefix="") gr =

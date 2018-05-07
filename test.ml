@@ -35,6 +35,9 @@ let loaded_graphstate_losstrained = GraphState.load_graphst "tests/saved-graphst
 
 let _ = Graph.save graph "tests/saved-graphstates/graph"
 
+(* Tests for loading of graph *)
+(* let _ = Graph.load "tests/saved-graphstates/graph.tfgraph" *)
+
 (* Simple chained graph replicating the above simple graph with chaining *)
 let graph = Graph.empty
 let graphst = GraphState.empty
