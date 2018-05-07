@@ -37,6 +37,8 @@ let string_of_nodetype = function
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
 
+(************************* helpers for load ***************************************)
+
 (* Helper function to get nodetype string from node map 
  * [str_nt] : string representation of nodetype 
  * [nm] : namespace for nodemap 
@@ -136,6 +138,8 @@ let load_helper path =
   let json = Yojson.Basic.from_file path in
   let ln_lst = load_nodes json in
   make_graph ln_lst [] [] [] []
+
+(************************* end of helpers for load ***************************************)
 
 (* Helper function. Converts nodetype and nodecounts to id and new nodecounts.
  * If prefix is set, the id will be prefixed by the prefix followed *)
