@@ -550,7 +550,7 @@ let rec forward n gr st =
         let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
         merge_graphstates [st1;st2] st
       | Log a ->
-        let log_val = st |> get_node a in
+        let log_val = st |> get_node node in
         backprop_graddesc a (Arr.div grad log_val) lr st
     end
 
