@@ -4,53 +4,51 @@ open Tfgraph
 open Tfgraphst
 open Jaynet
 open Jalexnet
+open Mnistnet
 
 
 (* OCaml allows {|...|} as a syntax for strings in which the ...
    can contain unescaped quotes.  This is super useful for
    constructing test cases, as shown below. *)
 
-(* Simple graph of sigmoid(A1x) = s1, sigmoid(A2s1) = s2, (s2-label)^2 = loss *)
-let graph = Graph.empty
-let graphst = GraphState.empty
-let x, _, y = Dataset.load_mnist_train_data ()
+let xtrain, _, ytrain = Dataset.load_mnist_train_data ()
+let xtrain, ytrain = (Dense.Matrix.Generic.cast_s2d xtrain, Dense.Matrix.Generic.cast_s2d ytrain)
+let xtrainbatches = Arr.split ~axis:0 (Array.of_list (List.init 100 (fun _ -> 600))) xtrain
+let ytrainbatches = Arr.split ~axis:0 (Array.of_list (List.init 100 (fun _ -> 600))) ytrain
+(* let trainbatches = List.combine (Array.to_list xtrainbatches) (Array.to_list ytrainbatches) *)
+let trainbatches = [(xtrainbatches.(0), ytrainbatches.(0))]
+let xtest, _, ytest = Dataset.load_mnist_test_data ()
+let xtest, ytest = (Dense.Matrix.Generic.cast_s2d xtest, Dense.Matrix.Generic.cast_s2d ytest)
 
 let graph = Graph.empty
 let graphst = GraphState.empty
-let (x, graph) = graph |> Graph.placeholder (Array.to_list (Dense.Ndarray.Generic.shape x))
-let (s2, graph, graphst) = Mnistnet.create [x] (Mnistnet.default_name) graph graphst
+let (x, graph) = graph |> Graph.placeholder (Array.to_list (Dense.Ndarray.Generic.shape xtrainbatches.(0)))
+let (y, graph) = graph |> Graph.placeholder (Array.to_list (Dense.Ndarray.Generic.shape ytrainbatches.(0)))
+let (loss, graph, graphst) = MnistNet.create [x;y] (MnistNet.default_name) graph graphst
+let (opt, graph) = graph |> Graph.grad_descent loss 0.0001
 
-let (loss, graph, graphst) = Jalexnet.create [x] (Jalexnet.default_name) graph graphst
-let graphstate = GraphState.(graphst
-                   |> add_node x (Arr.ones [|5;4|])
-)
-let loss_test2, st = Graph.forward loss graph graphstate
+let run_backward (st, accloss) xTr yTr =
+  let graphstate = GraphState.(st
+                    |> add_node x (xTr)
+                    |> add_node y (yTr)
+  ) in
+  let (new_st, losslist) = Graph.backward opt graph graphstate ~max_iter:100 in
+  new_st, (accloss @ losslist)
 
+let (graphst, losses) = List.fold_left 
+  (fun (st, accloss) (xTr, yTr) -> run_backward (st, accloss) xTr yTr)
+  (graphst, [])
+  trainbatches
+  (* (List.concat (List.init 1 (fun _ -> trainbatches))) *)
 
-let mat_to_string ar =
-  let array = Arr.to_array ar in
-  Array.fold_left (fun acc i -> acc ^ " " ^ (string_of_float i)) "" array
+let _ = GraphState.save_graphst graphst "tests/saved-graphstates-mnist"
+let _ = List.map (fun l -> Arr.print (Arr.sum l)) losses
 
-let state_to_string st =
-  GraphState.graphst_to_string st mat_to_string
+let _ = Arr.print (fst (Graph.forward loss graph graphst))
 
-let tests_mat = [
-  (* ("Hidden_1", (h1_test, "A=[4x10],x=[5x4], xA=[5x10]"), " 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2. 2."); *)
-  (* ("Sigmoid_1", (s1_test, "H1=[5x10], s1=[5x10]"), " 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978 0.880797077978"); *)
-]
-
-let tests_state = [
-  (* ("backward", (new_st, "new_state"), ""); *)
-]
-
-let make_tests t (result, in_str) out_str stringify =
-  ("\n########################### " ^ t ^ " ##################################\n\n    "
-  ^ in_str ^ " ========= EVALUATED TO ======> \n" ^ (stringify result) ^ "   \n\n"
-  ^ "   EXPECTED OUTPUT = \n" ^ out_str ^ "   \n\n"
-  ^ "#####################################################################\n"
-  >:: (fun _ -> assert_equal out_str (stringify result)))
-
-let _ = run_test_tt_main ("suite" >::: 
-  (List.map (fun (t, i, o) -> make_tests t i o mat_to_string) tests_mat) @ 
-  (List.map (fun (t, i, o) -> make_tests t i o state_to_string) tests_state)
-  )
+let x = Mat.linspace 0. 300. 300
+let y0 = (Arr.zeros [|(List.length losses)|])
+let _ = List.mapi (fun i l -> Arr.set_index y0 [|[|i|]|] [|(Arr.get_index l [|[|0;0|]|]).(0)|]) losses
+let h = Plot.create ""
+let _ = Plot.(plot ~h ~spec:[ RGB (255,0,0); LineStyle 1; Marker "#[0x2299]"; MarkerSize 8. ] x y0)
+let _ = Plot.output h

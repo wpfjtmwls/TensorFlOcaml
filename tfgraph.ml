@@ -308,9 +308,7 @@ let softmax n1 ?(prefix="") gr =
   else
   let nodetype = Operation (Softmax (n1)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
-  let size = if List.length n1.size = 2 && List.nth n1.size 2 <> 1 then 
-    failwith "Cannot calculate softmax of 2 dimensional array"
-    else n1.size in
+  let size = n1.size in
   let node = {id=id; nodetype=nodetype; size=size} in
   (node, {nc=nc'; nm=(id,node)::gr.nm; ol=new_output_list node [n1] gr.ol})
 
@@ -390,7 +388,10 @@ let mul n1 n2 ?(prefix="") gr =
   let size = begin
     if List.length n1.size = 2 && n1.size = n2.size
     then n1.size
-    else failwith  ("Invalid dimensions for multiply" ^ n1.id ^ " " ^ n2.id)
+    else 
+      let n1_size = List.fold_left (fun acc i -> acc ^ (string_of_int i) ^ "x") "" n1.size in
+      let n2_size = List.fold_left (fun acc i -> acc ^ (string_of_int i) ^ "x") "" n2.size in
+      failwith  ("Invalid dimensions for multiply " ^ n1_size ^ n1.id ^ " " ^ n2_size ^ n2.id)
   end in
   let node = {id=id; nodetype=nodetype; size=size} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
@@ -415,11 +416,11 @@ let crossentropyloss pred truth ?(prefix="") gr =
   let reducesumnode2, gr = reducesum reducesumnode1 0 ~prefix:prefix gr in
   neg reducesumnode2 ~prefix:prefix gr
 
-let grad_descent n ?(prefix="") gr =
+let grad_descent n lr ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
-  let nodetype = Optimizer (GradDesc(0.0001), n) in (* TODO: change learning rate *)
+  let nodetype = Optimizer (GradDesc(lr), n) in (* TODO: change learning rate *)
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let node = {id=id; nodetype=nodetype; size=[]} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
@@ -488,8 +489,8 @@ let rec forward n gr st =
       let (a2, st2) = forward n2 gr st in
       let ar = Arr.mul a1 a2 in
       ar, ((merge_graphstates [st1;st2] st |> add_node n ar))
-    | Log (n)->
-      let (a_val, st1) = forward n gr st in
+    | Log (n1)->
+      let (a_val, st1) = forward n1 gr st in
       let ar = Arr.log a_val in
       ar, add_node n ar st1
   end
@@ -509,11 +510,6 @@ let rec forward n gr st =
       | MatMul (a, b) ->
         let b_val = st |> get_node b in
         let a_val = st |> get_node a in
-        (* let _ = Printf.printf "Running Backprop on Matmul:  %s matmul %s = %s\n" a.id b.id node.id; in
-        let _ = Printf.printf "A %s * B %s = C %s\n" (string_of_dims a.size) (string_of_dims b.size) (string_of_dims node.size); in
-        let _ = Printf.printf "G = %s\n" (grad |> Arr.shape |> string_of_shape); in
-        let _ = Printf.printf "G = %s | Bt = %s | Agrad %s\n" (grad |> Arr.shape |> string_of_shape) (b_val |> Arr.transpose |> Arr.shape |> string_of_shape) (a_val |> Arr.shape |> string_of_shape); in
-        let _ = Printf.printf "At = %s | G = %s | Bgrad %s\n" (a_val |> Arr.transpose |> Arr.shape |> string_of_shape) (grad |> Arr.shape |> string_of_shape) (b_val |> Arr.shape |> string_of_shape); in *)
         let st1 = backprop_graddesc a (Arr.dot grad (b_val |> Arr.transpose)) lr st in
         let st2 = backprop_graddesc b (Arr.dot (a_val |> Arr.transpose) grad) lr st in
         merge_graphstates [st1; st2] st
@@ -540,15 +536,16 @@ let rec forward n gr st =
         backprop_graddesc a Arr.(pow_scalar (mul_scalar a_val p) (p_minus_1)) lr st
       | Softmax a ->
         let sm = st |> get_node node in
-        backprop_graddesc a Arr.((grad - (sum (grad * sm) ~axis:1)) * sm) lr st
+        backprop_graddesc a Arr.((grad - (reshape (sum (grad * sm) ~axis:1) [|-1;1|])) * sm) lr st
       | Negative a ->
         backprop_graddesc a (Arr.neg grad) lr st
       | ReduceSum (a, ax) ->
         let axsize = List.nth (a.size) ax in
-        backprop_graddesc a (Arr.repeat ~axis:ax grad axsize) lr st
+        let tilearray = if ax = 0 then [|axsize;1|] else [|1;axsize|] in
+        backprop_graddesc a (Arr.tile grad tilearray) lr st
       | Mul (a, b) ->
-        let b_val = st |> get_node b in
         let a_val = st |> get_node a in
+        let b_val = st |> get_node b in
         let st1 = backprop_graddesc a (Arr.mul grad b_val) lr st in
         let st2 = backprop_graddesc b (Arr.mul grad a_val) lr st in
         merge_graphstates [st1;st2] st
@@ -573,6 +570,7 @@ let backward n gr ?(max_iter=10) ?(delta=0.001) st =
   | Placeholder | Variable | Operation _ -> 
     failwith "Unable to run backward iteration on non-optimizer node"
   | Optimizer (opt, loss_node) ->
-    backward_helper opt loss_node gr st [] max_iter
+    match backward_helper opt loss_node gr st [] max_iter with
+    | (st, losses) -> st, (List.rev losses)
 
 end

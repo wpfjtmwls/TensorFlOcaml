@@ -122,11 +122,11 @@ module Graph : sig
   *)
   val crossentropyloss : node -> node -> ?prefix:string -> t -> (node * t)
 
-  (* [grad_descent] takes a node and a graph as inputs and outputs a new node and graph as a tuple
+  (* [grad_descent] takes a node, a learning rate and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node cannot be an optimizer.
   * [outputs] : a new node with a specific optimizer and a graph where the new node was added
   *)
-  val grad_descent : node -> ?prefix:string -> t -> (node * t)
+  val grad_descent : node -> float -> ?prefix:string -> t -> (node * t)
 
   (* ------------ Runners --------------- *)
 
