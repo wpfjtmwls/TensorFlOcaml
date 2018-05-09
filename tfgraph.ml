@@ -210,28 +210,6 @@ let nodes_in_save_order (output_nodes:node list) =
   List.rev (List.fold_left 
     (fun acc output_node -> merge_nodelists acc (nodes_in_save_order_singlenode output_node)) [] output_nodes)
 
-(* Helper. [get_params n] returns an (ordered) list of the inputs to n  *)
-let get_params n : node list =
-  match n.nodetype with
-  | Placeholder | Variable -> []
-  | Optimizer o -> [snd o]
-  | Operation o -> begin
-    match o with
-    | MatMul (n1,n2) -> [n1;n2]
-    | Add (n1, n2) -> [n1;n2]
-    | Minus (n1, n2) -> [n1;n2]
-    | SquareLoss (n1, n2) -> [n1;n2]
-    | Sigmoid n1 ->[n1]
-    | T n1 -> [n1]
-    | Pow (n1, p) -> [n1]
-    | Softmax n1 -> [n1]
-    | Negative n1 -> [n1]
-    | ReduceSum (n1, axis) -> [n1]
-    | Mul (n1, n2) -> [n1;n2]
-    | Log (n1) -> [n1]
-    | Broadcast (n1, index_from_right, size, expanded) -> [n1]
-  end
-
 (* Helper that builds a broadcast node if possible from two
  * nodes, one is the target (big) and one the broadcastee (small) *)
 let broadcast n1 n2 ?(prefix="") gr =
@@ -287,13 +265,29 @@ let broadcast n1 n2 ?(prefix="") gr =
 (* ------------ Load and Save --------------- *)
 
   let save gr path =
-    let get_param_id_strings = fun (n:node) : Yojson.json ->
-      `List (List.map (fun x -> `String x.id) (get_params n)) in
-    let json_of_dims d =
-      `List (List.map (fun x -> `Int x) d) in
-    let to_json_node = fun (n:node) : Yojson.json -> 
+    let to_json_node (n:node) : Yojson.json =
+      let params:Yojson.json = match n.nodetype with
+      | Placeholder | Variable -> `List []
+      | Optimizer o -> `List [`String (snd o).id]
+      | Operation o -> begin
+        match o with
+        | MatMul (n1,n2) -> `List [`String n1.id; `String n2.id]
+        | Add (n1, n2) -> `List [`String n1.id; `String n2.id]
+        | Minus (n1, n2) -> `List [`String n1.id; `String n2.id]
+        | SquareLoss (n1, n2) -> `List [`String n1.id; `String n2.id]
+        | Sigmoid n1 -> `List [`String n1.id]
+        | T n1 -> `List [`String n1.id]
+        | Pow (n1, p) -> `List [`String n1.id; `Float p]
+        | Softmax n1 -> `List [`String n1.id]
+        | Negative n1 -> `List [`String n1.id]
+        | ReduceSum (n1, axis) -> `List [`String n1.id; `Int axis]
+        | Mul (n1, n2) -> `List [`String n1.id; `String n2.id]
+        | Log (n1) -> `List [`String n1.id]
+        | Broadcast (n1, index_from_right, size, squeezed) -> `List [`String n1.id; `Int index_from_right; `Int size; `Bool squeezed ]
+      end in
+      let json_of_dims d = `List (List.map (fun x -> `Int x) d) in
       `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
-      ("size", json_of_dims n.size);("params", get_param_id_strings n)] in
+      ("size", json_of_dims n.size);("params", params)] in
     let ns = nodes_in_save_order gr.ol in
     let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
     Yojson.to_file (path ^ ".tfgraph") json
