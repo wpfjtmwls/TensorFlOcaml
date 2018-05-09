@@ -37,6 +37,7 @@ let string_of_nodetype = function
     | ReduceSum _ -> "REDUCESUM"
     | Mul _ -> "ELMUL"
     | Log _ -> "LOG"
+    | Broadcast _ -> "BROADCAST"
   end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
@@ -199,6 +200,7 @@ let nodes_in_save_order (output_nodes:node list) =
       | ReduceSum (n1, _) -> node::(nodes_in_save_order_singlenode n1)
       | Mul (n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
       | Log (n1) -> node::(nodes_in_save_order_singlenode n1)
+      | Broadcast (n1, _, _, _) -> node::(nodes_in_save_order_singlenode n1)
     end
   in
   let merge_nodelists oldlist newlist =
@@ -227,7 +229,60 @@ let get_params n : node list =
     | ReduceSum (n1, axis) -> [n1]
     | Mul (n1, n2) -> [n1;n2]
     | Log (n1) -> [n1]
+    | Broadcast (n1, index_from_right, size, expanded) -> [n1]
   end
+
+(* Helper that builds a broadcast node if possible from two
+ * nodes, one is the target (big) and one the broadcastee (small) *)
+let broadcast n1 n2 ?(prefix="") gr =
+  (* Identify which node to broadcase (small node) *)
+  let (small, big, reversed) = 
+    if (List.length n1.size) = (List.length n2.size) then
+      let n1sum = List.fold_left (+) 0 n1.size in
+      let n2sum = List.fold_left (+) 0 n2.size in
+      if n1sum > n2sum then (n2, n1, true) else (n1, n2, false)
+    else if (List.length n1.size) > (List.length n2.size) then
+      (n2, n1, true)
+    else (n1, n2, false)
+  in
+  let return small big reversed gr =
+    if reversed then big, small, gr else small, big, gr
+  in
+  if big.size = small.size then return small big reversed gr else
+  let paddedsmall = 
+    if (List.length big.size) > (List.length small.size) then
+      List.mapi (fun i x -> if i < (List.length small.size) then  List.nth small.size i else 1) big.size
+    else small.size
+  in
+  (* Check if broadcast possible *)
+  if List.fold_left2 
+    (fun acc s1 s2 -> if s1 <> s2 && s1 <> 1 then false else acc && true) false paddedsmall big.size 
+    then failwith "Unable to broadcast!"
+  else
+  (* Broadcast possible, run broadcasting *)
+  let make_node s_small s_big (n, index_from_right, graph) =
+    let sizelength = (List.length n.size) in
+    if s_big <> s_small && s_small <> 1 then failwith "FATAL: Broadcasting error!"
+    else if s_small = s_big && 
+      (index_from_right < sizelength) then 
+        (n, (index_from_right+1), graph)
+    else
+      let nodetype = if index_from_right < sizelength then
+        Operation(Broadcast(n, index_from_right, s_big, false))
+        else Operation(Broadcast(n, index_from_right, s_big, true))
+      in
+      let newsize = if index_from_right < sizelength then
+        List.mapi (fun i x -> if i = (sizelength - index_from_right - 1) then s_big else x) n.size
+        else s_big::n.size
+      in
+      let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+      let node = {id=id; nodetype=nodetype; size=newsize} in
+      (node, 
+      (index_from_right+1),
+      {nc=nc'; nm=(id,node)::graph.nm; ol= new_output_list node [n] gr.ol})
+  in
+  let broadcasted, _, graph = List.fold_right2 (make_node) paddedsmall big.size (small, 0, gr) in
+  return broadcasted big reversed gr
 
 (* ------------ Load and Save --------------- *)
 
@@ -278,6 +333,7 @@ let add n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
+  let (n1, n2, gr) = broadcast n1 n2 ~prefix:prefix gr in
   let nodetype = Operation (Add (n1, n2)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
@@ -339,6 +395,7 @@ let minus n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
+  let (n1, n2, gr) = broadcast n1 n2 ~prefix:prefix gr in
   let nodetype = Operation (Minus (n1, n2)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
@@ -383,6 +440,7 @@ let mul n1 n2 ?(prefix="") gr =
   if contains_optimizer [n1.nodetype;n2.nodetype]
   then failwith "Cannot multiply an optimizer"
   else
+  let (n1, n2, gr) = broadcast n1 n2 ~prefix:prefix gr in
   let nodetype = Operation (Mul (n1, n2)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = begin
@@ -405,6 +463,7 @@ let log n ?(prefix="") gr =
   let size = n.size in
   let node = {id=id; nodetype=nodetype; size=size} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
+
 
 let crossentropyloss pred truth ?(prefix="") gr =
   if contains_optimizer [pred.nodetype;truth.nodetype]
@@ -493,6 +552,15 @@ let rec forward n gr st =
       let (a_val, st1) = forward n1 gr st in
       let ar = Arr.log a_val in
       ar, add_node n ar st1
+    | Broadcast (n1, index_from_right, broadcasted_size, expanded) ->
+      let (a_val, st1) = forward n1 gr st in
+      if expanded then
+        let ar = (Arr.repeat ~axis:0 (Arr.expand a_val (index_from_right + 1)) broadcasted_size) in
+        ar, add_node n ar st1
+      else
+        let current_dims = Array.length (Arr.shape a_val) in
+        let ar = Arr.repeat ~axis:(current_dims - index_from_right - 1) a_val broadcasted_size in
+        ar, add_node n ar st1
   end
 
   (* Backward runners *)
@@ -552,6 +620,13 @@ let rec forward n gr st =
       | Log a ->
         let log_val = st |> get_node node in
         backprop_graddesc a (Arr.div grad log_val) lr st
+      | Broadcast (a, index_from_right, size, expanded) ->
+        let index = (List.length node.size) - index_from_right - 1 in
+        let unbroadcasted_gradient = 
+          let inside = Arr.((div_scalar (sum ~axis:index grad) (float_of_int (List.nth node.size index)))) in
+          if expanded then Arr.(squeeze ~axis:[|index|] inside) else inside
+        in
+        backprop_graddesc a unbroadcasted_gradient lr st
     end
 
 let rec backward_helper opt loss_node graph graphstate loss_list n =

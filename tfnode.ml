@@ -15,6 +15,7 @@ type oper =
   | ReduceSum of (node * int)
   | Mul of (node * node)
   | Log of (node)
+  | Broadcast of (node * int * int * bool)
 
 and optm =
   | GradDesc of float
