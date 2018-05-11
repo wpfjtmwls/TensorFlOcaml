@@ -527,7 +527,9 @@ let rec forward n gr st =
       ar, add_node n ar st1
     | Softmax (a) ->
       let (a_val, st1) = forward a gr st in
-      let ar = Arr.softmax a_val in
+      let e_a_val = Arr.exp a_val in
+      let total_val = Arr.(sum ~axis:1 (e_a_val)) in
+      let ar = Arr.(e_a_val / total_val) in
       ar, add_node n ar st1
     | Negative (a) ->
       let (a_val, st1) = forward a gr st in
@@ -589,7 +591,7 @@ let rec forward n gr st =
       | SquareLoss (pred, truth) ->
         let pred_val = st |> get_node pred in
         let truth_val = st |> get_node truth in
-        backprop_graddesc pred Arr.(mul_scalar (pred_val - truth_val) 2.) lr st
+        backprop_graddesc pred Arr.(div_scalar (mul_scalar (pred_val - truth_val) 2.) (float_of_int (Arr.shape pred_val).(0))) lr st
       | T a ->
         backprop_graddesc a (Arr.transpose grad) lr st
       | Pow (a, p) ->
