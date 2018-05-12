@@ -34,14 +34,14 @@ let new_st, losses = Graph.train optimizer graph
 let loss_trained, st_losstrained = Graph.forward loss graph new_st
 
 (* test for softmax *)
-let sm_graph = Graph.empty
+(* let sm_graph = Graph.empty
 let sm_graphst = GraphState.empty
 let sm_x, sm_graph = sm_graph |> Graph.placeholder [1;4]
 let sm_sm, sm_graph = sm_graph |> Graph.softmax sm_x
 let sm_gd, sm_graph = sm_graph |> Graph.grad_descent sm_sm 0.01
 let sm_graphst = GraphState.(sm_graphst |> add_node sm_x (Arr.ones [|1;4|]))
 let (sm_res, sm_graphst) = Graph.forward sm_sm sm_graph sm_graphst
-(*let (sm_back, sm_graphst) = Graph.backward sm_gd sm_graph sm_graphst*)
+let (sm_back, sm_graphst) = Graph.backward sm_gd sm_graph sm_graphst *)
 
 (* Tests for saving of simple graphstate *)
 let _ = GraphState.save_graphst new_st "tests/saved-graphstates"
@@ -52,6 +52,30 @@ let _ = Graph.save graph "tests/saved-graphstates/graph"
 (* Tests for loading of graph *)
 let gr1 = Graph.load "tests/saved-graphstates/graph.tfgraph" 
 let _ = Graph.save gr1 "tests/saved-graphstates/loaded_graph"
+
+(* Plotting test *)
+let () =
+let h = Plot.create "plot_003.png" in
+
+let x = Mat.create 1 3 0. in
+let y = Mat.create 1 3 0. in
+let () = Mat.set x 0 0 1. in
+let () = Mat.set x 0 1 2. in
+let () = Mat.set x 0 2 3. in
+let () = Mat.set y 0 0 1. in
+let () = Mat.set y 0 1 2. in
+let () = Mat.set y 0 2 3. in
+
+Plot.set_foreground_color h 0 0 0;
+Plot.set_background_color h 255 255 255;
+Plot.set_title h "Loss Function Plot";
+Plot.set_xlabel h "x-axis";
+Plot.set_ylabel h "y-axis";
+Plot.set_font_size h 8.;
+Plot.set_pen_size h 3.;
+let () = Plot.plot ~h x y in
+
+Plot.output h;;
 
 
 (* Simple chained graph replicating the above simple graph with chaining *)
@@ -84,7 +108,7 @@ let tests_mat = [
   ("loss_2", (loss_test2, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
 
   (*softmax*)
-  ("softmax", (sm_res, "sm_sm=[4x1]"), " 0.25 0.25 0.25 0.25");
+  (* ("softmax", (sm_res, "sm_sm=[4x1]"), " 0.25 0.25 0.25 0.25"); *)
 
 ]
 
