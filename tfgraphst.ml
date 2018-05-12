@@ -26,6 +26,10 @@ module GraphState = struct
   let get_node n state = match mem_assoc n.id state with 
     | true -> assoc n.id state
     | false -> failwith "Exception : No such node id exists in Graph State"
+
+  let get_node_by_id nodeid state = match mem_assoc nodeid state with
+  | true -> assoc nodeid state
+  | false -> failwith "Exception : No such node id in graphstate"
   
   (* (* [update_state] updates the old state with new state 
    * [requires] : new state, old state, and ids that have been updated

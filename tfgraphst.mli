@@ -21,6 +21,12 @@ module GraphState : sig
    * [returns] : corresponding matrix
    *)
   val get_node : node -> st -> Arr.arr
+
+  (* [get_node] gets a node from the current mapping 
+   * [requires] : node name and the current graphstate
+   * [returns] : corresponding matrix
+   *)
+  val get_node_by_id : string -> st -> Arr.arr  
   
   (* [merge_graphstates] merges the two graphstates accordingly
    * [requires] : two graphsates to be merged and accumulator (which shouold be [] initially)
