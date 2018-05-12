@@ -4,11 +4,15 @@
 #require "oUnit";;
 #require "owl";;
 #require "str";;
+#require "camlimages";;
+#require "camlimages.core";;
 #require "yojson";;
 
 (* Loads *)
+#load "tf.cmo";;
+#load "tfnode.cmo";;
 #load "tfgraphst.cmo";;
-#load "tfgrapho.cmo";;
+#load "tfgraph.cmo";;
 
 (* Styling *)
 #require "lambda-term";;
@@ -20,9 +24,7 @@ UTop.prompt := fst (React.S.create prompt);;
 (* UTop.prompt := fst (React.S.create LTerm_text.(eval [B_fg (LTerm_style.green); S "# "]) *)
 Sys.command "clear";;
 
-(* FOR A2 *)
-
 
 (* For Tensorflowcaml *)
-#use "graphst.ml"
-#use "grapho.ml"
+(* #use "tfgraphst.ml"
+#use "tfgraph.ml" *)
