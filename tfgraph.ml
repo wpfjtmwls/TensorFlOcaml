@@ -122,9 +122,6 @@ let get_params n : node list =
     let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
     Yojson.to_file (path ^ ".tfgraph") json
 
-  let load path = 
-    failwith "unimp"
-
 (* ------------ Node Creation --------------- *)
 
 let variable dims ?(prefix="") gr =
