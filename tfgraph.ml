@@ -1,6 +1,7 @@
 open Owl
 open Tfgraphst.GraphState
 open Tfnode
+(* open OImages *)
 open Yojson.Basic.Util
 
 let testmode = true
@@ -45,11 +46,11 @@ let string_of_nodetype = function
 
 (************************* helpers for load ***************************************)
 
-(* Helper function to get nodetype string from node map 
+(* Helper function to get node from node map 
  * [str_nt] : string representation of nodetype 
  * [nm] : namespace for nodemap 
  * precondition : the str_nt has already been declared *)
-let nt_from_nm str_nt nm = 
+let nd_from_nm str_nt nm = 
   if List.mem_assoc str_nt nm then List.assoc str_nt nm 
   else failwith "Exception: string Node has not been added to the nodemap"
 
@@ -61,32 +62,55 @@ let nodetype_from_string str_nt params nm =
   | "MM" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (MatMul (nd1, nd2))
   | "ADD" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (Add (nd1, nd2))
   | "MINUS" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (Minus (nd1, nd2))
   | "SL" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (SquareLoss (nd1, nd2))
-  | "SIGH" -> Operation (Sigmoid (nt_from_nm (List.hd params) nm))
-  | "T" -> Operation (T (nt_from_nm (List.hd params) nm))
+  | "SIGM" -> Operation (Sigmoid (nd_from_nm (List.hd params) nm))
+  | "T" -> Operation (T (nd_from_nm (List.hd params) nm))
   | "POW" -> failwith "Pow Unimplemented"
-  | "SOFTMAX" -> Operation (Softmax (nt_from_nm (List.hd params) nm))
-  | "GD" -> failwith "GD Unimplemented"
+  | "SOFTMAX" -> Operation (Softmax (nd_from_nm (List.hd params) nm))
+  | "GD" -> 
+    let lr = float_of_string (List.nth params 1) in
+    let nd = nd_from_nm (List.hd params) nm in
+    Optimizer ((GradDesc lr), nd)
+  | "NEG" -> Operation (Negative (nd_from_nm (List.hd params) nm))
+  | "REDUCESUM" -> 
+    let axis = int_of_string (List.nth params 1) in
+    let nd = nd_from_nm (List.hd params) nm in
+    Operation (ReduceSum (nd, axis))
+  | "ELMUL" ->
+    let str_nt1 = List.nth params 0 in
+    let str_nt2 = List.nth params 1 in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
+    Operation (Mul (nd1, nd2))
+  | "LOG" -> 
+    let nd = nd_from_nm (List.hd params) nm in
+    Operation (Log nd)
+  | "BROADCAST" ->
+    let nd = nd_from_nm (List.hd params) nm in
+    let dim1 = int_of_string (List.nth params 1) in
+    let dim2 = int_of_string (List.nth params 2) in
+    let bl = bool_of_string (List.nth params 3) in
+    Operation (Broadcast (nd, dim1, dim2, bl)) 
   | _ -> failwith "Not a valid string representation of nodetype"
   
 (* Define type for each node object expressed in json to be loaded *)
@@ -107,7 +131,7 @@ let load_single_node obj = {
 
 (* parse json file to a list of load_node objects *)
 let load_nodes j = 
-  try j |> member "graphs" |> to_list |> List.map load_single_node
+  try j |> member "graph" |> to_list |> List.map load_single_node
   with Type_error (s, _) -> failwith ("Parsing error: " ^ s) 
 
 (* Create a node from load node information *)
@@ -270,7 +294,11 @@ let broadcast n1 n2 ?(prefix="") gr =
     let to_json_node (n:node) : Yojson.json =
       let params:Yojson.json = match n.nodetype with
       | Placeholder | Variable -> `List []
-      | Optimizer o -> `List [`String (snd o).id]
+      | Optimizer o -> begin
+        match o with
+        | (GradDesc lr, n) -> `List [`String n.id; `String (string_of_float lr)]
+      end
+      (*`List [`String (snd o).id]*)
       | Operation o -> begin
         match o with
         | MatMul (n1,n2) -> `List [`String n1.id; `String n2.id]
@@ -279,14 +307,15 @@ let broadcast n1 n2 ?(prefix="") gr =
         | SquareLoss (n1, n2) -> `List [`String n1.id; `String n2.id]
         | Sigmoid n1 -> `List [`String n1.id]
         | T n1 -> `List [`String n1.id]
-        | Pow (n1, p) -> `List [`String n1.id; `Float p]
+        | Pow (n1, p) -> `List [`String n1.id; `String (string_of_float p)]
         | Softmax n1 -> `List [`String n1.id]
         | Negative n1 -> `List [`String n1.id]
-        | ReduceSum (n1, axis) -> `List [`String n1.id; `Int axis]
+        | ReduceSum (n1, axis) -> `List [`String n1.id; `String (string_of_int axis)]
         | Mul (n1, n2) -> `List [`String n1.id; `String n2.id]
         | Log (n1) -> `List [`String n1.id]
-        | Broadcast (n1, index_from_right, size, squeezed) -> `List [`String n1.id; `Int index_from_right; `Int size; `Bool squeezed ]
         | CrossEntropyLoss (n1, n2) -> `List [`String n1.id; `String n2.id]
+        | Broadcast (n1, index_from_right, size, squeezed) -> `List [`String n1.id; `String (string_of_int index_from_right);
+              `String (string_of_int size); `String (string_of_bool squeezed)]
       end in
       let json_of_dims d = `List (List.map (fun x -> `Int x) d) in
       `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
