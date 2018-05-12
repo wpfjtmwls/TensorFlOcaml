@@ -26,13 +26,13 @@ module Graph : sig
   * [requires] : int list representing matrix dimensions and a graph
   * [outputs] : a new variable node with initial matrix depending on the matrix dimension and a graph where the new node was added
   *)
-  val variable : int list -> ?prefix:string -> t -> (node * t)
+  val variable : int list -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [placeholder] a matrix dimension as int list and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : int list representing matrix dimensions and a graph
   * [outputs] : a new placeholder node with initial matrix depending on the matrix dimension and a graph where the new node was added
   *)
-  val placeholder : int list -> ?prefix:string -> t -> (node * t)
+  val placeholder : int list -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [matmul] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : two nodes and a graph. Both nodes are two-dimensional and the second dimension of the
@@ -40,93 +40,93 @@ module Graph : sig
   Neither node can be an optimizer.
   * [outputs] : a new node that is multiplication of two nodes and a graph where the new node was added
   *)
-  val matmul : node -> node -> ?prefix:string -> t -> (node * t)
+  val matmul : node -> node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [add] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : two nodes and a graph. Both nodes are two-dimensional and have the same shape.
   * Neither node can be an optimizer.
   * [outputs] : a new node that is addition of two nodes and a graph where the new node was added
   *)
-  val add : node -> node -> ?prefix:string -> t -> (node * t)
+  val add : node -> node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [squared_loss] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : two nodes and a graph. Both nodes are two-dimensional and have the same shape.
   * Neither node can be an optimizer.
   * [outputs] : a new node that is the calculation of loss function between two nodes and a graph where the new node was added
   *)
-  val squared_loss : node -> node -> ?prefix:string -> t -> (node * t)
+  val squared_loss : node -> node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [softmax] takes one node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : one node and a graph. Node should be [n;1] dimensional
   * Node cannot be optimizer.
   * [outputs] : a new node that is the calculation of the softmax function between two nodes and a graph where the new node was added
   *)
-  val softmax : node -> ?prefix:string -> t -> (node * t)
+  val softmax : node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [sigmoid] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node cannot be an optimizer.
   * [outputs] : a new node that is the output of sigmoid function of the input node and a graph where the new node was added
   *)
-  val sigmoid : node -> ?prefix:string -> t -> (node * t)
+  val sigmoid : node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [trans] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node is two-dimensional and cannot be an optimizer.
   * [outputs] : a new node that is the output of transpose of the input node and a graph where the new node was added
   *)
-  val trans : node -> ?prefix:string -> t -> (node * t)
+  val trans : node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [minus] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : two nodes and a graph. Both nodes are two-dimensional and have the same shape.
   * Neither node can be an optimizer.
   * [outputs] : a new node that is subtraction of two nodes and a graph where the new node was added
   *)
-  val minus : node -> node -> ?prefix:string -> t -> (node * t)
+  val minus : node -> node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [pow] takes a node, a float, and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node, a float, and a graph. The node cannot be an optimizer.
   * [outputs] : a new node that is float power of node and a graph where the new node was added
   *)
-  val pow : node -> float -> ?prefix:string -> t -> (node * t)
+  val pow : node -> float -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [neg] takes a node, and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node cannot be an optimizer.
   * [outputs] : a new node that is the negation of the node and a graph where the new node was added
   *)
-  val neg : node -> ?prefix:string -> t -> (node * t)
+  val neg : node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [reducesum] takes a node, an axis, and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node cannot be an optimizer.
   * [outputs] : a new node that is the sum of the old node along the specified axis
        and a graph where the new node was added
   *)
-  val reducesum : node -> int -> ?prefix:string -> t -> (node * t)
+  val reducesum : node -> int -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [reducesum] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : two nodes of same dimensions and a graph. The nodes cannot be an optimizer.
   * [outputs] : a new node that is the element-wise multiplication of the input nodes
        and a graph where the new node was added
   *)
-  val mul : node -> node -> ?prefix:string -> t -> (node * t)
+  val mul : node -> node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [log] takes a node and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : The node cannot be an optimizer.
   * [outputs] : a new node that is the log of the input node
        and a graph where the new node was added
   *)
-  val log : node -> ?prefix:string -> t -> (node * t)
+  val log : node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [crossentropyloss] takes two nodes and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : first node is the output prediction and second node is the input label. Cannot be optimizer
     nodes
   * [outputs] : a new node that is the cross-entropy loss and a graph where the new node was added
   *)
-  val crossentropyloss : node -> node -> ?prefix:string -> t -> (node * t)
+  val crossentropyloss : node -> node -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* [grad_descent] takes a node, a learning rate and a graph as inputs and outputs a new node and graph as a tuple
   * [requires] : a node and a graph. The node cannot be an optimizer.
   * [outputs] : a new node with a specific optimizer and a graph where the new node was added
   *)
-  val grad_descent : node -> float -> ?prefix:string -> t -> (node * t)
+  val grad_descent : node -> float -> ?prefix:string -> ?logger:logger option -> t -> (node * t)
 
   (* ------------ Runners --------------- *)
 

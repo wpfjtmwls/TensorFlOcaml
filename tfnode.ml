@@ -1,4 +1,5 @@
 open Owl
+open Printf
 
 type dims = int list
 
@@ -27,7 +28,9 @@ and nodetype =
   | Operation of oper
   | Optimizer of (optm * node)
 
-and node = {id: string; nodetype: nodetype; size: dims}
+and logger = {filename: string; interval: int; counter: int ref}
+
+and node = {id: string; nodetype: nodetype; size: dims; log: logger option}
 
 (* Helper function. Convert dimension to string *)
 let string_of_dims dims =
@@ -48,4 +51,15 @@ let dims_of_shape sh =
 let matches_array_shape n ar =
   ar |> Arr.shape |> dims_of_shape = n.size
 
-let empty = {id="";nodetype=Placeholder;size=[]}
+let update_node_log (n:node) (value:float) =
+  match n.log with
+  | Some l -> 
+    l.counter := !(l.counter) + 1;
+    if !(l.counter) mod l.interval = 0 then
+      (* write to file *)
+      let oc = open_out_gen [Open_wronly; Open_append; Open_creat; Open_text] 0o666 l.filename in
+      fprintf oc "%s|%d|%f\n" n.id !(l.counter) value;
+      close_out oc;
+  | None -> ()
+
+let empty = {id="";nodetype=Placeholder;size=[];log=None;}

@@ -137,24 +137,44 @@ let load_logger_json j = {
   load_counter = j |> member "counter" |> to_int;
 }
 
-(* Load one single node object from json file *)
-let load_single_node obj = {
-  load_nodeid = obj |> member "node_id" |> to_string;
-  load_nodetype = obj |> member "nodetype" |> to_string;
-  load_size = obj |> member "size" |> to_list |> List.map to_int;
-  load_params = obj |> member "params" |> to_list |> List.map to_string;
-  load_logflag = obj |> member "logflag" |> to_int;
-  load_logger = obj |> member "logger" |> load_logger_json
+let empty_logger = {
+  load_filename = "empty";
+  load_interval = -1;
+  load_counter = -1;
 }
 
-let make_logger load_logger = {
-  filename = load_logger.load_filename;
-  interval = load_logger.load_interval;
-  counter = ref load_logger.load_counter;
+(* Load one single node object from json file *)
+let load_single_node obj = 
+  let lf = obj |> member "logflag" |> to_int in
+  match lf with 
+  | 1 -> {
+    load_nodeid = obj |> member "node_id" |> to_string;
+    load_nodetype = obj |> member "nodetype" |> to_string;
+    load_size = obj |> member "size" |> to_list |> List.map to_int;
+    load_params = obj |> member "params" |> to_list |> List.map to_string;
+    load_logflag = obj |> member "logflag" |> to_int;
+    load_logger = obj |> member "logger" |> load_logger_json
+  }
+  | 0 -> 
+  {
+    load_nodeid = obj |> member "node_id" |> to_string;
+    load_nodetype = obj |> member "nodetype" |> to_string;
+    load_size = obj |> member "size" |> to_list |> List.map to_int;
+    load_params = obj |> member "params" |> to_list |> List.map to_string;
+    load_logflag = obj |> member "logflag" |> to_int;
+    load_logger = empty_logger;
+  }
+  | _ -> failwith "Exception : at load_single_node, logflag should only either be 0 or 1"
+  
+
+let make_logger ll = {
+  filename = ll.load_filename;
+  interval = ll.load_interval;
+  counter = ref ll.load_counter;
 }
 
 (* parse json file to a list of load_node objects *)
-let load_nodes j = 
+let load_nodes j =
   try j |> member "graph" |> to_list |> List.map load_single_node
   with Type_error (s, _) -> failwith ("Parsing error: " ^ s) 
 
@@ -163,11 +183,11 @@ let make_node ln nm = {
   id = ln.load_nodeid;
   nodetype = (nodetype_from_string ln.load_nodetype ln.load_params nm);
   size = ln.load_size;
-  logger = if ln.load_logflag = 0 then None else Some (make_logger ln.load_logger);
+  log = if ln.load_logflag = 0 then None else Some (make_logger ln.load_logger);
 }
 
 (* Configure the new ol by checking if anynode in output node list is one of the params for other nodes *)
-let rec config_ol old_ol acc_params = 
+let rec config_ol old_ol acc_params =
   List.fold_left (fun acc nd -> if List.exists (fun x -> x=nd.id) acc_params then acc else nd::acc) [] old_ol
 
 (* Update node count map according to the string nodetype *)
@@ -193,8 +213,6 @@ let load path =
   let json = Yojson.Basic.from_file path in
   let ln_lst = load_nodes json in
   make_graph ln_lst [] [] [] []
-
-(************************* end of helpers for load ***************************************)
 
 (* Helper function. Converts nodetype and nodecounts to id and new nodecounts.
  * If prefix is set, the id will be prefixed by the prefix followed *)
@@ -263,7 +281,7 @@ let nodes_in_save_order (output_nodes:node list) =
 
 (* Helper that builds a broadcast node if possible from two
  * nodes, one is the target (big) and one the broadcastee (small) *)
-let broadcast n1 n2 ?(prefix="") gr =
+let broadcast n1 n2 ?(prefix="") ?(logger=None) gr =
   (* Identify which node to broadcase (small node) *)
   let (small, big, reversed) = 
     if (List.length n1.size) = (List.length n2.size) then
@@ -305,7 +323,7 @@ let broadcast n1 n2 ?(prefix="") gr =
         else s_big::n.size
       in
       let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
-      let node = {id=id; nodetype=nodetype; size=newsize} in
+      let node = {id=id; nodetype=nodetype; size=newsize; log=logger} in
       (node, 
       (index_from_right+1),
       {nc=nc'; nm=(id,node)::graph.nm; ol= new_output_list node [n] gr.ol})
@@ -323,7 +341,6 @@ let broadcast n1 n2 ?(prefix="") gr =
         match o with
         | (GradDesc lr, n) -> `List [`String n.id; `String (string_of_float lr)]
       end
-      (*`List [`String (snd o).id]*)
       | Operation o -> begin
         match o with
         | MatMul (n1,n2) -> `List [`String n1.id; `String n2.id]
@@ -343,27 +360,31 @@ let broadcast n1 n2 ?(prefix="") gr =
               `String (string_of_int size); `String (string_of_bool squeezed)]
       end in
       let json_of_dims d = `List (List.map (fun x -> `Int x) d) in
+      let (logger, logflag) = match n.log with
+      | Some l -> (`Assoc [("filename", `String l.filename);("interval", `Int (l.interval));
+        ("counter", `Int (!(l.counter)))], `Int 1)
+      | None -> (`Assoc [], `Int 0) in
       `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
-      ("size", json_of_dims n.size);("params", params)] in
+      ("size", json_of_dims n.size);("params", params);("logflag",logflag);("logger",logger)] in
     let ns = nodes_in_save_order gr.ol in
     let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
     Yojson.to_file (path ^ ".tfgraph") json
     
 (* ------------ Node Creation --------------- *)
 
-let variable dims ?(prefix="") gr =
+let variable dims ?(prefix="") ?(logger=None) gr =
   let nodetype = Variable in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
-  let node = {id=id; nodetype=nodetype; size=dims} in
+  let node = {id=id; nodetype=nodetype; size=dims; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [] gr.ol})
 
-let placeholder dims ?(prefix="") gr =
+let placeholder dims ?(prefix="") ?(logger=None) gr =
   let nodetype = Placeholder in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
-  let node = {id=id; nodetype=nodetype; size=dims} in
+  let node = {id=id; nodetype=nodetype; size=dims; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [] gr.ol})
 
-let matmul n1 n2 ?(prefix="") gr =
+let matmul n1 n2 ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot do a matmul on an optimizer"
   else
@@ -374,10 +395,10 @@ let matmul n1 n2 ?(prefix="") gr =
     then [List.hd n1.size; List.nth n2.size 1]
     else failwith ("Invalid dimensions for matmul " ^ n1.id ^ " " ^ n2.id)
   end in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
-let add n1 n2 ?(prefix="") gr =
+let add n1 n2 ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
@@ -389,10 +410,10 @@ let add n1 n2 ?(prefix="") gr =
     then n1.size
     else failwith  ("Invalid dimensions for add " ^ n1.id ^ " " ^ n2.id)
   end in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
-let squared_loss n1 n2 ?(prefix="") gr =
+let squared_loss n1 n2 ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
@@ -403,29 +424,29 @@ let squared_loss n1 n2 ?(prefix="") gr =
     then n1.size
     else failwith  ("Invalid dimensions for sqloss " ^ n1.id ^ " " ^ n2.id)
   end in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
-let softmax n1 ?(prefix="") gr =
+let softmax n1 ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n1.nodetype]
   then failwith "Cannot calculate softmax of optimizer"
   else
   let nodetype = Operation (Softmax (n1)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n1.size in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm=(id,node)::gr.nm; ol=new_output_list node [n1] gr.ol})
 
-let sigmoid n ?(prefix="") gr =
+let sigmoid n ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Sigmoid n) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
-  let node = {id=id; nodetype=nodetype; size=n.size} in
+  let node = {id=id; nodetype=nodetype; size=n.size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
-let trans n ?(prefix="") gr =
+let trans n ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
@@ -436,10 +457,10 @@ let trans n ?(prefix="") gr =
     then List.rev n.size
     else failwith "Invalid dimensions"
   end in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
-let minus n1 n2 ?(prefix="") gr =
+let minus n1 n2 ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n1.nodetype; n2.nodetype]
   then failwith "Cannot add node to optimizer"
   else
@@ -451,40 +472,40 @@ let minus n1 n2 ?(prefix="") gr =
     then n1.size
     else failwith  ("Invalid dimensions for minus" ^ n1.id ^ " " ^ n2.id)
   end in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
-let pow n power ?(prefix="") gr =
+let pow n power ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Operation (Pow (n, power)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n.size in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
-let neg n ?(prefix="") gr =
+let neg n ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot take negation of optimizer"
   else
   let nodetype = Operation (Negative (n)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n.size in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
-let reducesum n axis ?(prefix="") gr =
+let reducesum n axis ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot reduce sum on optimizer"
   else
   let nodetype = Operation (ReduceSum (n, axis)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = List.mapi (fun ind el -> if ind <> axis then el else 1) n.size in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
-let mul n1 n2 ?(prefix="") gr =
+let mul n1 n2 ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n1.nodetype;n2.nodetype]
   then failwith "Cannot multiply an optimizer"
   else
@@ -499,21 +520,21 @@ let mul n1 n2 ?(prefix="") gr =
       let n2_size = List.fold_left (fun acc i -> acc ^ (string_of_int i) ^ "x") "" n2.size in
       failwith  ("Invalid dimensions for multiply " ^ n1_size ^ n1.id ^ " " ^ n2_size ^ n2.id)
   end in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n1;n2] gr.ol})
 
-let log n ?(prefix="") gr =
+let log n ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot take negation of optimizer"
   else
   let nodetype = Operation (Log (n)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = n.size in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
 
-let crossentropyloss pred truth ?(prefix="") gr =
+let crossentropyloss pred truth ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [pred.nodetype;truth.nodetype]
   then failwith "Cannot run cross entropy loss on optimizer"
   else
@@ -523,18 +544,24 @@ let crossentropyloss pred truth ?(prefix="") gr =
   let node = {id=id; nodetype=nodetype; size=size} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [pred;truth] gr.ol})
 
-let grad_descent n lr ?(prefix="") gr =
+let grad_descent n lr ?(prefix="") ?(logger=None) gr =
   if contains_optimizer [n.nodetype]
   then failwith "Cannot add node to optimizer"
   else
   let nodetype = Optimizer (GradDesc(lr), n) in (* TODO: change learning rate *)
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
-  let node = {id=id; nodetype=nodetype; size=[]} in
+  let node = {id=id; nodetype=nodetype; size=[]; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [n] gr.ol})
 
 (* ------------ Runners --------------- *)
 
 let rec forward n gr st =
+  let () = match n.log with
+  | Some l ->
+    (* log value if it is a matrix with one element (loss node usually) *)
+    let ar = get_node n st in
+    if Arr.shape ar = [|1|] then update_node_log n (Arr.get ar [|0|])
+  | None -> () in
   match n.nodetype with
   | Placeholder | Variable -> get_node n st, st
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
