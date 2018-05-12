@@ -38,6 +38,7 @@ let string_of_nodetype = function
     | Mul _ -> "ELMUL"
     | Log _ -> "LOG"
     | Broadcast _ -> "BROADCAST"
+    | CrossEntropyLoss _ -> "CROSSENTROPYLOSS"
   end
   | Optimizer (o, _) -> (match o with
     | GradDesc _ -> "GD")
@@ -201,6 +202,7 @@ let nodes_in_save_order (output_nodes:node list) =
       | Mul (n1, n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
       | Log (n1) -> node::(nodes_in_save_order_singlenode n1)
       | Broadcast (n1, _, _, _) -> node::(nodes_in_save_order_singlenode n1)
+      | CrossEntropyLoss (n1,n2) -> node::((nodes_in_save_order_singlenode n1) @ (nodes_in_save_order_singlenode n2))
     end
   in
   let merge_nodelists oldlist newlist =
@@ -284,6 +286,7 @@ let broadcast n1 n2 ?(prefix="") gr =
         | Mul (n1, n2) -> `List [`String n1.id; `String n2.id]
         | Log (n1) -> `List [`String n1.id]
         | Broadcast (n1, index_from_right, size, squeezed) -> `List [`String n1.id; `Int index_from_right; `Int size; `Bool squeezed ]
+        | CrossEntropyLoss (n1, n2) -> `List [`String n1.id; `String n2.id]
       end in
       let json_of_dims d = `List (List.map (fun x -> `Int x) d) in
       `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
@@ -463,11 +466,11 @@ let crossentropyloss pred truth ?(prefix="") gr =
   if contains_optimizer [pred.nodetype;truth.nodetype]
   then failwith "Cannot run cross entropy loss on optimizer"
   else
-  let lognode, gr = log pred ~prefix:prefix gr in
-  let mulnode, gr = mul truth lognode ~prefix:prefix gr in
-  let reducesumnode1, gr = reducesum mulnode 1 ~prefix:prefix gr in
-  let reducesumnode2, gr = reducesum reducesumnode1 0 ~prefix:prefix gr in
-  neg reducesumnode2 ~prefix:prefix gr
+  let nodetype = Operation(CrossEntropyLoss (pred, truth)) in
+  let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
+  let size = [1] in
+  let node = {id=id; nodetype=nodetype; size=size} in
+  (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [pred;truth] gr.ol})
 
 let grad_descent n lr ?(prefix="") gr =
   if contains_optimizer [n.nodetype]
@@ -557,6 +560,11 @@ let rec forward n gr st =
         let current_dims = Array.length (Arr.shape a_val) in
         let ar = Arr.repeat ~axis:(current_dims - index_from_right - 1) a_val broadcasted_size in
         ar, add_node n ar st1
+    | CrossEntropyLoss (n1, n2) ->
+      let (a_val, st1) = forward n1 gr st in
+      let (b_val, st2) = forward n2 gr st in
+      let ar = Arr.(neg (sum (b_val * (log a_val)))) in
+      ar, ((merge_graphstates [st1;st2] st |> add_node n ar))
   end
 
   (* Backward runners *)
@@ -623,25 +631,60 @@ let rec forward n gr st =
           if expanded then Arr.(squeeze ~axis:[|index|] inside) else inside
         in
         backprop_graddesc a unbroadcasted_gradient lr st
+      | CrossEntropyLoss (a, b) ->
+        let a_val = st |> get_node a in
+        let b_val = st |> get_node b in
+        let a_grad = Arr.(neg ((scalar_div 1. a_val) * b_val)) in
+        backprop_graddesc a (a_grad) lr st
     end
 
-let rec backward_helper opt loss_node graph graphstate loss_list n =
-  let loss, st_after_run = forward loss_node graph graphstate in
-  (* TODO: terminate on delta *)
-  if n = 0 then (graphstate, loss::loss_list) else
-  let backpropped =
-    match opt with
-    | GradDesc lr ->
-      backprop_graddesc loss_node (Arr.ones [|1|]) lr st_after_run
-  in
-  backward_helper opt loss_node graph (backpropped) (loss::loss_list) (n-1)
-
-let backward n gr ?(max_iter=10) ?(delta=0.001) st =
+let backward n gr st =
   match n.nodetype with
   | Placeholder | Variable | Operation _ -> 
     failwith "Unable to run backward iteration on non-optimizer node"
   | Optimizer (opt, loss_node) ->
-    match backward_helper opt loss_node gr st [] max_iter with
-    | (st, losses) -> st, (List.rev losses)
+    let _, st_after_run = forward loss_node gr st in
+    let backpropped =
+      match opt with
+      | GradDesc lr ->
+        backprop_graddesc loss_node (Arr.ones [|1|]) lr st_after_run
+    in
+    backpropped
+
+let train n gr input_list ?(max_iter=10) ?(delta=0.001) ?(log_loss_every_ith=10) st =
+  let num_batches = (List.length (snd (List.nth input_list 0))) in
+  let _ = List.map (fun (node, arrlist) -> 
+    if (List.length arrlist) <> num_batches 
+    then failwith "Inconsistent input lengths in train call" else ()); in
+  let rec train_helper_topiter n gr input_list max_iter delta prev_losses st =
+    if max_iter = 0 then 
+      (st, (List.rev prev_losses))
+    else
+    let one_run n gr input_list_extracted st =
+      let st = List.fold_left (fun acc (node, arr) -> acc |> add_node node arr) st input_list_extracted in
+      backward n gr st
+    in
+    let mut_st = ref st in
+    let mut_losses = ref prev_losses in
+    let mut_done = ref false in
+    
+    for i = 0 to (num_batches-1) do
+      mut_st := one_run n gr (List.map (fun (x, l) -> (x, (List.nth l i)) ) input_list) !mut_st;
+      if (i mod log_loss_every_ith) = 0 then
+        match n.nodetype with
+        | Optimizer (opt, loss_node) -> begin
+          let lossfloat = Arr.(get_index (mean (flatten (fst (forward loss_node gr !mut_st)))) [|[|0|]|]).(0) in
+          match !mut_losses with
+          | h::t when (h -. lossfloat) < delta -> mut_done := true;
+          | _ -> mut_losses := (lossfloat)::!mut_losses;
+        end
+        | _ -> failwith "Unable to run training on non-optimizer node"
+    done;
+    if !mut_done then
+      train_helper_topiter n gr input_list 0 delta !mut_losses !mut_st
+    else
+      train_helper_topiter n gr input_list (max_iter-1) delta !mut_losses !mut_st
+  in
+  train_helper_topiter n gr input_list max_iter delta [] st
 
 end

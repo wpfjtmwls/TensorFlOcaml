@@ -26,7 +26,11 @@ let graphstate = GraphState.(graphst
 let loss_test, st = Graph.forward loss graph graphstate
 let y_pred, st = Graph.forward s2 graph graphstate
 let y_actual, st = Graph.forward label graph graphstate
-let new_st, losslist = Graph.backward optimizer graph graphstate
+let new_st, losses = Graph.train optimizer graph 
+  [
+    (x, [(Arr.ones [|5;4|])]); 
+    (label, [(Arr.(ones [|5;1|]))])
+  ] graphstate ~max_iter:100000 ~delta:0.000000001
 let loss_trained, st_losstrained = Graph.forward loss graph new_st
 
 (* Tests for saving of simple graphstate *)
@@ -62,7 +66,7 @@ let tests_mat = [
   ("loss_1", (loss_test, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
   ("y_actual", (y_actual, "y_actual placeholder=[5x1]"), " 1. 1. 1. 1. 1.");
   ("y_pred", (y_pred, "y_pred=[5x1]"), " 0.987919222585 0.987919222585 0.987919222585 0.987919222585 0.987919222585");
-  ("trained_loss", (loss_trained, "trained loss"), " 0.000145941911639 0.000145941911639 0.000145941911639 0.000145941911639 0.000145941911639");
+  ("trained_loss", (loss_trained, "trained loss"), " 5.66264501612e-05 5.66264501612e-05 5.66264501612e-05 5.66264501612e-05 5.66264501612e-05");
 
   (* test for Chaining *)
   ("loss_2", (loss_test2, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
