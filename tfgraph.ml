@@ -685,8 +685,9 @@ let train n gr input_list ?(max_iter=10) ?(delta=0.001) ?(log_loss_every_ith=10)
   let _ = List.map (fun (node, arrlist) -> 
     if (List.length arrlist) <> num_batches 
     then failwith "Inconsistent input lengths in train call" else ()); in
-  let rec train_helper_topiter n gr input_list max_iter delta prev_losses st =
+  let rec train_helper_topiter n gr input_list max_iter delta prev_losses st previterloss =
     if max_iter = 0 then 
+      let _ = Printf.printf "Terminating on max_iters."; in
       (st, (List.rev prev_losses))
     else
     let one_run n gr input_list_extracted st =
@@ -695,7 +696,7 @@ let train n gr input_list ?(max_iter=10) ?(delta=0.001) ?(log_loss_every_ith=10)
     in
     let mut_st = ref st in
     let mut_losses = ref prev_losses in
-    let mut_done = ref false in
+    let mut_iter_loss = ref [] in
     
     for i = 0 to (num_batches-1) do
       mut_st := one_run n gr (List.map (fun (x, l) -> (x, (List.nth l i)) ) input_list) !mut_st;
@@ -703,17 +704,18 @@ let train n gr input_list ?(max_iter=10) ?(delta=0.001) ?(log_loss_every_ith=10)
         match n.nodetype with
         | Optimizer (opt, loss_node) -> begin
           let lossfloat = Arr.(get_index (mean (flatten (fst (forward loss_node gr !mut_st)))) [|[|0|]|]).(0) in
-          match !mut_losses with
-          | h::t when (h -. lossfloat) < delta -> mut_done := true;
-          | _ -> mut_losses := (lossfloat)::!mut_losses;
+          mut_losses := (lossfloat)::!mut_losses;
+          mut_iter_loss := (lossfloat)::!mut_iter_loss;
         end
         | _ -> failwith "Unable to run training on non-optimizer node"
     done;
-    if !mut_done then
-      train_helper_topiter n gr input_list 0 delta !mut_losses !mut_st
+    let iterloss = (List.fold_left (+.) 0. !mut_iter_loss) /. (float_of_int (List.length !mut_iter_loss)) in
+    if (previterloss -. iterloss) < delta then
+      let _ = Printf.printf "Terminating on delta %.5f\n" (previterloss -. iterloss) in
+      train_helper_topiter n gr input_list 0 delta !mut_losses !mut_st iterloss
     else
-      train_helper_topiter n gr input_list (max_iter-1) delta !mut_losses !mut_st
+      train_helper_topiter n gr input_list (max_iter-1) delta !mut_losses !mut_st iterloss
   in
-  train_helper_topiter n gr input_list max_iter delta [] st
+  train_helper_topiter n gr input_list max_iter delta [] st (float_of_int max_int)
 
 end
