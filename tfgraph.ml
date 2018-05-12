@@ -105,7 +105,7 @@ let load_single_node obj = {
 
 (* parse json file to a list of load_node objects *)
 let load_nodes j = 
-  try j |> member "graphs" |> to_list |> List.map load_single_node
+  try j |> member "graph" |> to_list |> List.map load_single_node
   with Type_error (s, _) -> failwith ("Parsing error: " ^ s) 
 
 (* Create a node from load node information *)
