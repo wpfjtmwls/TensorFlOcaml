@@ -112,12 +112,28 @@ let nodetype_from_string str_nt params nm =
     Operation (Broadcast (nd, dim1, dim2, bl)) 
   | _ -> failwith "Not a valid string representation of nodetype"
   
+(* Define type for each logger object *)
+type load_logger = {
+  load_filename : string;
+  load_interval : int;
+  load_counter : int;
+}
+
 (* Define type for each node object expressed in json to be loaded *)
 type load_node = {
   load_nodeid : string;
   load_nodetype : string;
   load_size : int list;
   load_params : string list;
+  load_logflag : int;
+  load_logger : load_logger;
+}
+
+(* Helper function to load the logger object in the json *)
+let load_logger_json j = {
+  load_filename = j |> member "filename" |> to_string;
+  load_interval = j |> member "interval" |> to_int;
+  load_counter = j |> member "counter" |> to_int;
 }
 
 (* Load one single node object from json file *)
@@ -126,6 +142,14 @@ let load_single_node obj = {
   load_nodetype = obj |> member "nodetype" |> to_string;
   load_size = obj |> member "size" |> to_list |> List.map to_int;
   load_params = obj |> member "params" |> to_list |> List.map to_string;
+  load_logflag = obj |> member "logflag" |> to_int;
+  load_logger = obj |> member "logger" |> load_logger_json
+}
+
+let make_logger load_logger = {
+  filename = load_logger.load_filename;
+  interval = load_logger.load_interval;
+  counter = ref load_logger.load_counter;
 }
 
 (* parse json file to a list of load_node objects *)
@@ -138,6 +162,7 @@ let make_node ln nm = {
   id = ln.load_nodeid;
   nodetype = (nodetype_from_string ln.load_nodetype ln.load_params nm);
   size = ln.load_size;
+  logger = if ln.load_logflag = 0 then None else Some (make_logger ln.load_logger);
 }
 
 (* Configure the new ol by checking if anynode in output node list is one of the params for other nodes *)
@@ -163,7 +188,7 @@ let rec make_graph ln_lst acc_nc acc_ol acc_nm acc_params =
     make_graph t new_nc new_ol new_nm new_params
 
 (* Preprocessing helper function for [load] converts the path to json and parse *)
-let load_helper path = 
+let load path = 
   let json = Yojson.Basic.from_file path in
   let ln_lst = load_nodes json in
   make_graph ln_lst [] [] [] []
@@ -320,9 +345,6 @@ let broadcast n1 n2 ?(prefix="") gr =
     let ns = nodes_in_save_order gr.ol in
     let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
     Yojson.to_file (path ^ ".tfgraph") json
-
-  let load path = 
-    load_helper path
     
 (* ------------ Node Creation --------------- *)
 

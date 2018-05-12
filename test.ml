@@ -49,6 +49,30 @@ let _ = Graph.save graph "tests/saved-graphstates/graph"
 let gr1 = Graph.load "tests/saved-graphstates/graph.tfgraph" 
 let _ = Graph.save gr1 "tests/saved-graphstates/loaded_graph"
 
+(* Plotting test *)
+let () =
+let h = Plot.create "plot_003.png" in
+
+let x = Mat.create 1 3 0. in
+let y = Mat.create 1 3 0. in
+let () = Mat.set x 0 0 1. in
+let () = Mat.set x 0 1 2. in
+let () = Mat.set x 0 2 3. in
+let () = Mat.set y 0 0 1. in
+let () = Mat.set y 0 1 2. in
+let () = Mat.set y 0 2 3. in
+
+Plot.set_foreground_color h 0 0 0;
+Plot.set_background_color h 255 255 255;
+Plot.set_title h "Loss Function Plot";
+Plot.set_xlabel h "x-axis";
+Plot.set_ylabel h "y-axis";
+Plot.set_font_size h 8.;
+Plot.set_pen_size h 3.;
+let () = Plot.plot ~h x y in
+
+Plot.output h;;
+
 
 (* Simple chained graph replicating the above simple graph with chaining *)
 let graph = Graph.empty
