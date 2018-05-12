@@ -140,6 +140,14 @@ module Graph : sig
   * [requires] : a node, a graph, and a graph state 
   * [outputs] : changed GraphState from backward pass into previous nodes and update the according mutable fields
   *)
-  val backward : node -> t -> ?max_iter:int -> ?delta:float -> GraphState.st -> (GraphState.st * (Arr.arr list))
+  val backward : node -> t -> GraphState.st -> GraphState.st
+
+  (* [train] takes an optimizer node, graph and a list of graph state inputs and outputs the resulting
+   *         state after training iteratively on each element of the graph state inputs
+   * [requires] : lengths of each graph state input lists to be equal, each element represents one training batch and
+                  has to have the same number of rows
+   * [outputs] : GraphState.st after training and a list of floats representing the loss function over time
+  *)
+  val train : node -> t -> (node * (Arr.arr list)) list -> ?max_iter:int -> ?delta:float -> ?log_loss_every_ith:int -> GraphState.st  -> (GraphState.st * (float list))
 
 end

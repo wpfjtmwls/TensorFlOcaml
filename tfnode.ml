@@ -16,6 +16,7 @@ type oper =
   | Mul of (node * node)
   | Log of (node)
   | Broadcast of (node * int * int * bool)
+  | CrossEntropyLoss of (node * node)
 
 and optm =
   | GradDesc of float

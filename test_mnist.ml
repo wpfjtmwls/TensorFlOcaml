@@ -29,10 +29,8 @@ let batchsize = 32
 let xtrainbatches = Arr.split ~axis:0 (Array.of_list (List.init (60000 / batchsize) (fun _ -> batchsize))) xtrain
 let ytrainbatches = Arr.split ~axis:0 (Array.of_list (List.init (60000 / batchsize) (fun _ -> batchsize))) ytrain
 let trainbatches = List.combine (Array.to_list xtrainbatches) (Array.to_list ytrainbatches)
-let xtest, ytest = ((Arr.get_slice [[0;(batchsize - 1)]] xtest), (Arr.get_slice [[0;(batchsize - 1)]] ytest))
-
-(* TODO: Remove. For now, try overfitting on just the first batch of training data *)
-let trainbatches = [List.nth trainbatches 0]
+let xtestbatches = Arr.split ~axis:0 (Array.of_list (List.init (3200 / batchsize) (fun _ -> batchsize))) (Arr.get_slice [[0;3199];[]] xtest)
+let ytestbatches = Arr.split ~axis:0 (Array.of_list (List.init (3200 / batchsize) (fun _ -> batchsize))) (Arr.get_slice [[0;3199];[]] ytest)
 
 (* Graph construction *)
 let graph = Graph.empty
@@ -43,7 +41,7 @@ let (loss, graph, graphst) = MnistNet.create [x;y] (MnistNet.default_name) graph
 let (opt, graph) = graph |> Graph.grad_descent loss 0.01
 
 (* Evaluation helper *)
-let get_accuracy xVal yVal graph graphst =
+let get_accuracy_helper xVal yVal graph graphst =
   let graphst = GraphState.(graphst
                   |> add_node x (xVal)
                   |> add_node y (yVal)
@@ -54,29 +52,36 @@ let get_accuracy xVal yVal graph graphst =
   let truth = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] yVal in
   let total = float_of_int (Arr.shape yVal).(0) in
   float_of_int (List.fold_left2 (fun acc i1 i2 -> if i1 = i2 then acc + 1 else acc) 0 preds truth) /. total
+let get_accuracy xValList yValList graph graphst =
+  let xValList, yValList = Array.to_list xValList, Array.to_list yValList in
+  let all = List.fold_left2 (fun acc xVal yVal -> (get_accuracy_helper xVal yVal graph graphst)::acc) [] xValList yValList in
+  (List.fold_left (+.) 0. all) /. (float_of_int (List.length all))
+
+let get_loss xVal yVal graph graphst =
+  let graphst = GraphState.(graphst
+                  |> add_node x (xVal)
+                  |> add_node y (yVal)
+  ) in
+  let (loss_val, graphst) = Graph.forward loss graph graphst in
+  (Arr.get_index loss_val [|[|0;0|]|]).(0)
 
 (* Evaluating the graph *)
-let _ = Printf.printf "Starting Accuracy on trg set: %.5f\n" (get_accuracy xtrainbatches.(0) ytrainbatches.(0) graph graphst)
-let _ = Printf.printf "Starting Accuracy on test set: %.5f\n" (get_accuracy xtest ytest graph graphst)
-(* Training the graph *)
-let run_backward (st, accloss) xTr yTr =
-  let graphstate = GraphState.(st
-                    |> add_node x (xTr)
-                    |> add_node y (yTr)
-  ) in
-  let (new_st, losslist) = Graph.backward opt graph graphstate ~max_iter:1 in
-  new_st, (accloss @ losslist)
-let (graphst, losses) = List.fold_left 
-  (fun (st, accloss) (xTr, yTr) -> run_backward (st, accloss) xTr yTr)
-  (graphst, [])
-  (List.concat (List.init 100 (fun _ -> trainbatches)))
+let _ = Printf.printf "Starting Accuracy on trg set: %.5f\n" (get_accuracy (Array.sub xtrainbatches 0 10) (Array.sub ytrainbatches 0 10) graph graphst)
+let _ = Printf.printf "Starting Accuracy on test set: %.5f\n" (get_accuracy (Array.sub xtestbatches 0 10) (Array.sub ytestbatches 0 10) graph graphst)
+let _ = Printf.printf "Starting loss on training set: %.5f\n" (get_loss xtrainbatches.(0) ytrainbatches.(0) graph graphst)
+let _ = Printf.printf "Starting loss on test set: %.5f\n" (get_loss xtestbatches.(0) ytestbatches.(0) graph graphst)
 
-let _ = Arr.print ~max_row:10 ~max_col:10 (GraphState.(graphst |> get_node_by_id "MNISTNET_SIGM_0"))
+(* Training the graph *)
+let (graphst, losslist) = Graph.train opt graph [(x, (Array.to_list xtrainbatches)); (y, (Array.to_list ytrainbatches))] ~max_iter:10 ~delta:0.01 ~log_loss_every_ith:10 graphst
+
+(* let _ = Arr.print ~max_row:10 ~max_col:10 (GraphState.(graphst |> get_node_by_id "MNISTNET_VAR_0")) *)
 let _ = GraphState.save_graphst graphst "tests/saved-graphstates-mnist"
 
 (* Evaluating the graph *)
-let _ = Printf.printf "Ending Accuracy on trg set: %.5f\n" (get_accuracy xtrainbatches.(0) ytrainbatches.(0) graph graphst)
-let _ = Printf.printf "Ending Accuracy on test set: %.5f\n" (get_accuracy xtest ytest graph graphst)
+let _ = Printf.printf "Ending Accuracy on trg set: %.5f\n" (get_accuracy (Array.sub xtrainbatches 0 10) (Array.sub ytrainbatches 0 10) graph graphst)
+let _ = Printf.printf "Ending Accuracy on test set: %.5f\n" (get_accuracy (Array.sub xtestbatches 0 10) (Array.sub ytestbatches 0 10) graph graphst)
+let _ = Printf.printf "Ending loss on training set: %.5f\n" (get_loss xtrainbatches.(0) ytrainbatches.(0) graph graphst)
+let _ = Printf.printf "Ending loss on test set: %.5f\n" (get_loss xtestbatches.(0) ytestbatches.(0) graph graphst)
 
 (* let _ = Arr.print ~max_row:10 ~max_col:10 (GraphState.(graphst |> get_node_by_id "MNISTNET_MM_0"))
 let _ = Arr.print ~max_row:10 ~max_col:10 (GraphState.(graphst |> get_node_by_id "MNISTNET_SIGM_0")) *)
