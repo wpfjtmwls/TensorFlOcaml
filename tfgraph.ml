@@ -541,7 +541,7 @@ let crossentropyloss pred truth ?(prefix="") ?(logger=None) gr =
   let nodetype = Operation(CrossEntropyLoss (pred, truth)) in
   let (id, nc') = gen_id nodetype gr.nc ~prefix:prefix in
   let size = [1] in
-  let node = {id=id; nodetype=nodetype; size=size} in
+  let node = {id=id; nodetype=nodetype; size=size; log=logger} in
   (node, {nc=nc'; nm = (id,node)::gr.nm; ol = new_output_list node [pred;truth] gr.ol})
 
 let grad_descent n lr ?(prefix="") ?(logger=None) gr =
