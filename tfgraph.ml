@@ -136,25 +136,45 @@ let load_logger_json j = {
   load_counter = j |> member "counter" |> to_int;
 }
 
-(* Load one single node object from json file *)
-let load_single_node obj = {
-  load_nodeid = obj |> member "node_id" |> to_string;
-  load_nodetype = obj |> member "nodetype" |> to_string;
-  load_size = obj |> member "size" |> to_list |> List.map to_int;
-  load_params = obj |> member "params" |> to_list |> List.map to_string;
-  load_logflag = obj |> member "logflag" |> to_int;
-  load_logger = obj |> member "logger" |> load_logger_json
+let empty_logger = {
+  load_filename = "empty";
+  load_interval = -1;
+  load_counter = -1;
 }
 
-let make_logger load_logger = {
-  filename = load_logger.load_filename;
-  interval = load_logger.load_interval;
-  counter = ref load_logger.load_counter;
+(* Load one single node object from json file *)
+let load_single_node obj = 
+  let lf = obj |> member "logflag" |> to_int in
+  match lf with 
+  | 1 -> {
+    load_nodeid = obj |> member "node_id" |> to_string;
+    load_nodetype = obj |> member "nodetype" |> to_string;
+    load_size = obj |> member "size" |> to_list |> List.map to_int;
+    load_params = obj |> member "params" |> to_list |> List.map to_string;
+    load_logflag = obj |> member "logflag" |> to_int;
+    load_logger = obj |> member "logger" |> load_logger_json
+  }
+  | 0 -> 
+  {
+    load_nodeid = obj |> member "node_id" |> to_string;
+    load_nodetype = obj |> member "nodetype" |> to_string;
+    load_size = obj |> member "size" |> to_list |> List.map to_int;
+    load_params = obj |> member "params" |> to_list |> List.map to_string;
+    load_logflag = obj |> member "logflag" |> to_int;
+    load_logger = empty_logger;
+  }
+  | _ -> failwith "Exception : at load_single_node, logflag should only either be 0 or 1"
+  
+
+let make_logger ll = {
+  filename = ll.load_filename;
+  interval = ll.load_interval;
+  counter = ref ll.load_counter;
 }
 
 (* parse json file to a list of load_node objects *)
 let load_nodes j =
-  try j |> member "graphs" |> to_list |> List.map load_single_node
+  try j |> member "graph" |> to_list |> List.map load_single_node
   with Type_error (s, _) -> failwith ("Parsing error: " ^ s) 
 
 (* Create a node from load node information *)
@@ -162,7 +182,7 @@ let make_node ln nm = {
   id = ln.load_nodeid;
   nodetype = (nodetype_from_string ln.load_nodetype ln.load_params nm);
   size = ln.load_size;
-  logger = if ln.load_logflag = 0 then None else Some (make_logger ln.load_logger);
+  log = if ln.load_logflag = 0 then None else Some (make_logger ln.load_logger);
 }
 
 (* Configure the new ol by checking if anynode in output node list is one of the params for other nodes *)
