@@ -90,6 +90,26 @@ let nodetype_from_string str_nt params nm =
     let lr = float_of_string (List.nth params 1) in
     let nd = nd_from_nm (List.hd params) nm in
     Optimizer ((GradDesc lr), nd)
+  | "NEG" -> Operation (Negative (nd_from_nm (List.hd params) nm))
+  | "REDUCESUM" -> 
+    let axis = int_of_string (List.nth params 1) in
+    let nd = nd_from_nm (List.hd params) nm in
+    Operation (ReduceSum (nd, axis))
+  | "ELMUL" ->
+    let str_nt1 = List.nth params 0 in
+    let str_nt2 = List.nth params 1 in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
+    Operation (Mul (nd1, nd2))
+  | "LOG" -> 
+    let nd = nd_from_nm (List.hd params) nm in
+    Operation (Log nd)
+  | "BROADCAST" ->
+    let nd = nd_from_nm (List.hd params) nm in
+    let dim1 = int_of_string (List.nth params 1) in
+    let dim2 = int_of_string (List.nth params 2) in
+    let bl = bool_of_string (List.nth params 3) in
+    Operation (Broadcast (nd, dim1, dim2, bl)) 
   | _ -> failwith "Not a valid string representation of nodetype"
   
 (* Define type for each node object expressed in json to be loaded *)

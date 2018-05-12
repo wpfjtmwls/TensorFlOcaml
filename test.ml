@@ -47,7 +47,7 @@ let _ = Graph.save graph "tests/saved-graphstates/graph"
 
 (* Tests for loading of graph *)
 let gr1 = Graph.load "tests/saved-graphstates/graph.tfgraph" 
-let _ = Graph.save gr1 "tests/saved-graphstates/loaded_graph.tfgraph"
+let _ = Graph.save gr1 "tests/saved-graphstates/loaded_graph"
 
 
 (* Simple chained graph replicating the above simple graph with chaining *)
