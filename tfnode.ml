@@ -27,7 +27,7 @@ and nodetype =
   | Operation of oper
   | Optimizer of (optm * node)
 
-and logger = {filename: string; interval: int; counter: int}
+and logger = {filename: string; interval: int; counter: int ref}
 
 and node = {id: string; nodetype: nodetype; size: dims; log: logger option}
 

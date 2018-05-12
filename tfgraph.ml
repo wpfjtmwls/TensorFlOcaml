@@ -153,13 +153,8 @@ let make_logger load_logger = {
 }
 
 (* parse json file to a list of load_node objects *)
-<<<<<<< HEAD
-let load_nodes j = 
-  try j |> member "graph" |> to_list |> List.map load_single_node
-=======
 let load_nodes j =
   try j |> member "graphs" |> to_list |> List.map load_single_node
->>>>>>> 65f5c1c1ef450f691082b08cbf081b0c2e920f0a
   with Type_error (s, _) -> failwith ("Parsing error: " ^ s) 
 
 (* Create a node from load node information *)
