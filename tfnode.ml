@@ -27,7 +27,7 @@ and nodetype =
   | Operation of oper
   | Optimizer of (optm * node)
 
-and logger = {filename: string; interval: int; counter: int}
+and logger = {filename: string; interval: int; counter: int ref}
 
 and node = {id: string; nodetype: nodetype; size: dims; log: logger option}
 
@@ -50,15 +50,15 @@ let dims_of_shape sh =
 let matches_array_shape n ar =
   ar |> Arr.shape |> dims_of_shape = n.size
 
-let update_log (n:node) =
+let update_node_log (n:node) (value:float) =
   match n.log with
-  | Some l -> let l' = {l with counter = l.counter + 1} in
-    let () = if l'.counter mod l'.interval = 0 then
-      (*write to the file*)
-      let oc = open_out_gen [Open_wronly; Open_append; Open_creat; Open_text] 0o666 l'.filename in
-      fprintf oc "hello world\n";
-      close_out oc; in
-    {n with log = Some l'}
-  | None -> n
+  | Some l -> 
+    l.counter := !(l.counter) + 1;
+    if !(l.counter) mod l.interval = 0 then
+      (* write to file *)
+      let oc = open_out_gen [Open_wronly; Open_append; Open_creat; Open_text] 0o666 l.filename in
+      fprintf oc "%s|%d|%f\n" n.id !(l.counter) value;
+      close_out oc;
+  | None -> ()
 
 let empty = {id="";nodetype=Placeholder;size=[];log=None;}

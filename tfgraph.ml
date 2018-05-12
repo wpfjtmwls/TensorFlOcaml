@@ -289,12 +289,12 @@ let broadcast n1 n2 ?(prefix="") ?(logger=None) gr =
               `String (string_of_int size); `String (string_of_bool squeezed)]
       end in
       let json_of_dims d = `List (List.map (fun x -> `Int x) d) in
-      let logger = match n.log with
-      | Some l -> `Assoc [("filename", `String l.filename);("interval", `String (string_of_int l.interval));
-        ("counter", `String (string_of_int l.counter))]
-      | None -> `Assoc [] in
+      let (logger, logflag) = match n.log with
+      | Some l -> (`Assoc [("filename", `String l.filename);("interval", `Int (l.interval));
+        ("counter", `Int (!(l.counter)))], `Int 1)
+      | None -> (`Assoc [], `Int 0) in
       `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
-      ("size", json_of_dims n.size);("params", params);("logger",logger)] in
+      ("size", json_of_dims n.size);("params", params);("logflag",logflag);("logger",logger)] in
     let ns = nodes_in_save_order gr.ol in
     let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
     Yojson.to_file (path ^ ".tfgraph") json
@@ -485,6 +485,12 @@ let grad_descent n lr ?(prefix="") ?(logger=None) gr =
 (* ------------ Runners --------------- *)
 
 let rec forward n gr st =
+  let () = match n.log with
+  | Some l ->
+    (* log value if it is a matrix with one element (loss node usually) *)
+    let ar = get_node n st in
+    if Arr.shape ar = [|1|] then update_node_log n (Arr.get ar [|0|])
+  | None -> () in
   match n.nodetype with
   | Placeholder | Variable -> get_node n st, st
   | Optimizer _ -> failwith "Cannot call forward on an optimizer node"
