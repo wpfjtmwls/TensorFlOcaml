@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 true: use_menhir, package(oUnit), package(str), package(owl), package(camlimages), package(camlimages.core)
+=======
+true: use_menhir, package(oUnit), package(str), package(owl), package(yojson), package(camlimages)
+>>>>>>> d3a54e28eebe55f7ebbf17b9ff17da75299024c2
 <repl.*>: package(react), package(lwt), package(lambda-term)

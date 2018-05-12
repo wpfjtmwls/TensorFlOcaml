@@ -26,6 +26,10 @@ module GraphState = struct
   let get_node n state = match mem_assoc n.id state with 
     | true -> assoc n.id state
     | false -> failwith "Exception : No such node id exists in Graph State"
+
+  let get_node_by_id nodeid state = match mem_assoc nodeid state with
+  | true -> assoc nodeid state
+  | false -> failwith "Exception : No such node id in graphstate"
   
   (* (* [update_state] updates the old state with new state 
    * [requires] : new state, old state, and ids that have been updated
@@ -87,7 +91,18 @@ module GraphState = struct
     in updated_state
 
   let graphst_to_string st mat_to_string =
-    List.fold_left (fun str (id, mat) -> id ^ ":\n" ^ (mat_to_string mat) ^ "\n\n")
-    "" st
-    
+    let sorted = List.sort (fun (id1,_) (id2,_) -> String.compare id1 id2) st in
+    List.fold_left (fun str (id, mat) -> str ^ id ^ ":\n" ^ (mat_to_string mat) ^ "\n\n")
+    "" sorted
+
+  let save_graphst st folderpath =
+    let _ = List.map (fun (id, mat) -> (Mat.save mat (folderpath ^ "/" ^ id ^ ".tfgraphst"))) st in ()
+
+  let load_graphst folderpath =
+    Sys.readdir folderpath |> 
+    Array.to_list |> 
+    List.fold_left (fun acc path -> 
+    if Filename.extension path = ".tfgraphst" then
+      Filename.((remove_extension path), (Mat.load (concat folderpath path)))::acc
+    else acc) []
 end

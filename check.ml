@@ -14,6 +14,7 @@ open Fileio
 (* Tests *)
 open Alexnet
 open Jaynet
+open Mnistnet
 (* Other *)
 
 let x = "wow"

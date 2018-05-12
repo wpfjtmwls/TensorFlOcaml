@@ -10,6 +10,12 @@ type oper =
   | Sigmoid of node
   | T of node
   | Pow of (node * float)
+  | Softmax of node
+  | Negative of node
+  | ReduceSum of (node * int)
+  | Mul of (node * node)
+  | Log of (node)
+  | Broadcast of (node * int * int * bool)
 
 and optm =
   | GradDesc of float

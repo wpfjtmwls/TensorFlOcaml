@@ -21,6 +21,12 @@ module GraphState : sig
    * [returns] : corresponding matrix
    *)
   val get_node : node -> st -> Arr.arr
+
+  (* [get_node] gets a node from the current mapping 
+   * [requires] : node name and the current graphstate
+   * [returns] : corresponding matrix
+   *)
+  val get_node_by_id : string -> st -> Arr.arr  
   
   (* [merge_graphstates] merges the two graphstates accordingly
    * [requires] : two graphsates to be merged and accumulator (which shouold be [] initially)
@@ -31,4 +37,11 @@ module GraphState : sig
 
  (* Returns string representation of state *)
  val graphst_to_string : st -> (Arr.arr -> string) -> string
+
+(* Saves a graph state into the specified folder as *.tfgraphst files *)
+val save_graphst : st -> string -> unit
+
+(* Loads a graph state from the specified folder from all *.tfgraphst files *)
+val load_graphst : string -> st
+
 end
