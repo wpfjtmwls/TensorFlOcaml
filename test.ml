@@ -37,7 +37,7 @@ let sm_sm, sm_graph = sm_graph |> Graph.softmax sm_x
 let sm_gd, sm_graph = sm_graph |> Graph.grad_descent sm_sm 0.01
 let sm_graphst = GraphState.(sm_graphst |> add_node sm_x (Arr.ones [|1;4|]))
 let (sm_res, sm_graphst) = Graph.forward sm_sm sm_graph sm_graphst
-(*let (sm_back, sm_graphst) = Graph.backward sm_gd sm_graph sm_graphst*)
+let (sm_back, sm_graphst) = Graph.backward sm_gd sm_graph sm_graphst
 
 (* Tests for saving of simple graphstate *)
 let _ = GraphState.save_graphst new_st "tests/saved-graphstates"
