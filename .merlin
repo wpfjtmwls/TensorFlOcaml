@@ -7,3 +7,4 @@ PKG lambda-term
 PKG owl
 PKG yojson
 PKG camlimages
+PKG camlimages.core

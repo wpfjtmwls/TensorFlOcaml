@@ -29,6 +29,16 @@ let y_actual, st = Graph.forward label graph graphstate
 let new_st, losslist = Graph.backward optimizer graph graphstate
 let loss_trained, st_losstrained = Graph.forward loss graph new_st
 
+(* test for softmax *)
+let sm_graph = Graph.empty
+let sm_graphst = GraphState.empty
+let sm_x, sm_graph = sm_graph |> Graph.placeholder [1;4]
+let sm_sm, sm_graph = sm_graph |> Graph.softmax sm_x
+let sm_gd, sm_graph = sm_graph |> Graph.grad_descent sm_sm 0.01
+let sm_graphst = GraphState.(sm_graphst |> add_node sm_x (Arr.ones [|1;4|]))
+let (sm_res, sm_graphst) = Graph.forward sm_sm sm_graph sm_graphst
+(*let (sm_back, sm_graphst) = Graph.backward sm_gd sm_graph sm_graphst*)
+
 (* Tests for saving of simple graphstate *)
 let _ = GraphState.save_graphst new_st "tests/saved-graphstates"
 let loaded_graphstate_losstrained = GraphState.load_graphst "tests/saved-graphstates"
@@ -66,6 +76,9 @@ let tests_mat = [
 
   (* test for Chaining *)
   ("loss_2", (loss_test2, "s2=[5x1],label=[5x1],loss=[5x1]") , " 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956 0.000145945182956");
+
+  (*softmax*)
+  ("softmax", (sm_res, "sm_sm=[4x1]"), " 0.25 0.25 0.25 0.25");
 
 ]
 
