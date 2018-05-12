@@ -45,11 +45,11 @@ let string_of_nodetype = function
 
 (************************* helpers for load ***************************************)
 
-(* Helper function to get nodetype string from node map 
+(* Helper function to get node from node map 
  * [str_nt] : string representation of nodetype 
  * [nm] : namespace for nodemap 
  * precondition : the str_nt has already been declared *)
-let nt_from_nm str_nt nm = 
+let nd_from_nm str_nt nm = 
   if List.mem_assoc str_nt nm then List.assoc str_nt nm 
   else failwith "Exception: string Node has not been added to the nodemap"
 
@@ -61,32 +61,35 @@ let nodetype_from_string str_nt params nm =
   | "MM" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (MatMul (nd1, nd2))
   | "ADD" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (Add (nd1, nd2))
   | "MINUS" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (Minus (nd1, nd2))
   | "SL" -> 
     let str_nt1 = List.nth params 0 in
     let str_nt2 = List.nth params 1 in
-    let nd1 = nt_from_nm str_nt1 nm in 
-    let nd2 = nt_from_nm str_nt2 nm in
+    let nd1 = nd_from_nm str_nt1 nm in 
+    let nd2 = nd_from_nm str_nt2 nm in
     Operation (SquareLoss (nd1, nd2))
-  | "SIGH" -> Operation (Sigmoid (nt_from_nm (List.hd params) nm))
-  | "T" -> Operation (T (nt_from_nm (List.hd params) nm))
+  | "SIGM" -> Operation (Sigmoid (nd_from_nm (List.hd params) nm))
+  | "T" -> Operation (T (nd_from_nm (List.hd params) nm))
   | "POW" -> failwith "Pow Unimplemented"
-  | "SOFTMAX" -> Operation (Softmax (nt_from_nm (List.hd params) nm))
-  | "GD" -> failwith "GD Unimplemented"
+  | "SOFTMAX" -> Operation (Softmax (nd_from_nm (List.hd params) nm))
+  | "GD" -> 
+    let lr = float_of_string (List.nth params 1) in
+    let nd = nd_from_nm (List.hd params) nm in
+    Optimizer ((GradDesc lr), nd)
   | _ -> failwith "Not a valid string representation of nodetype"
   
 (* Define type for each node object expressed in json to be loaded *)
