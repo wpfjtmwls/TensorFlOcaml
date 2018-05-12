@@ -268,7 +268,11 @@ let broadcast n1 n2 ?(prefix="") gr =
     let to_json_node (n:node) : Yojson.json =
       let params:Yojson.json = match n.nodetype with
       | Placeholder | Variable -> `List []
-      | Optimizer o -> `List [`String (snd o).id]
+      | Optimizer o -> begin
+        match o with
+        | (GradDesc lr, n) -> `List [`String n.id; `String (string_of_float lr)]
+      end
+      (*`List [`String (snd o).id]*)
       | Operation o -> begin
         match o with
         | MatMul (n1,n2) -> `List [`String n1.id; `String n2.id]
@@ -277,13 +281,14 @@ let broadcast n1 n2 ?(prefix="") gr =
         | SquareLoss (n1, n2) -> `List [`String n1.id; `String n2.id]
         | Sigmoid n1 -> `List [`String n1.id]
         | T n1 -> `List [`String n1.id]
-        | Pow (n1, p) -> `List [`String n1.id; `Float p]
+        | Pow (n1, p) -> `List [`String n1.id; `String (string_of_float p)]
         | Softmax n1 -> `List [`String n1.id]
         | Negative n1 -> `List [`String n1.id]
-        | ReduceSum (n1, axis) -> `List [`String n1.id; `Int axis]
+        | ReduceSum (n1, axis) -> `List [`String n1.id; `String (string_of_int axis)]
         | Mul (n1, n2) -> `List [`String n1.id; `String n2.id]
         | Log (n1) -> `List [`String n1.id]
-        | Broadcast (n1, index_from_right, size, squeezed) -> `List [`String n1.id; `Int index_from_right; `Int size; `Bool squeezed ]
+        | Broadcast (n1, index_from_right, size, squeezed) -> `List [`String n1.id; `String (string_of_int index_from_right);
+              `String (string_of_int size); `String (string_of_bool squeezed)]
       end in
       let json_of_dims d = `List (List.map (fun x -> `Int x) d) in
       `Assoc [("node_id", `String n.id);("nodetype", `String (string_of_nodetype n.nodetype));
