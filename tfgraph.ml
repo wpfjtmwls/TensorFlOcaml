@@ -587,7 +587,7 @@ let rec forward n gr st =
         merge_graphstates [st1; st2] st
       | Sigmoid a ->
         let sig_val = st |> get_node node in
-        backprop_graddesc a Arr.(mul grad (mul sig_val ((ones [|1|]) - sig_val))) lr st
+        backprop_graddesc a Arr.(grad * sig_val * ((ones [|1|]) - sig_val)) lr st
       | SquareLoss (pred, truth) ->
         let pred_val = st |> get_node pred in
         let truth_val = st |> get_node truth in
@@ -600,7 +600,7 @@ let rec forward n gr st =
         backprop_graddesc a Arr.(pow_scalar (mul_scalar a_val p) (p_minus_1)) lr st
       | Softmax a ->
         let sm = st |> get_node node in
-        backprop_graddesc a Arr.((grad - (reshape (sum (grad * sm) ~axis:1) [|-1;1|])) * sm) lr st
+        backprop_graddesc a Arr.((grad - (sum (grad * sm) ~axis:1)) * sm) lr st
       | Negative a ->
         backprop_graddesc a (Arr.neg grad) lr st
       | ReduceSum (a, ax) ->
