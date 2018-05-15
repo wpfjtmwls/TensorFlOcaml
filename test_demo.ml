@@ -74,10 +74,11 @@ let rec demo (preds:int list) (truths:int list) (idx:int) : unit =
   let z_t = Mat.get_slice [[];[0;783]] (Arr.row (xtestplotbatches.(batch)) idx) in
   let z_t = Mat.reshape z_t [|28;28|] in 
   let filename = "demos/mnist_" ^ string_of_int idx ^ ".png" in
+  let imgname = "mnist_" ^ string_of_int idx ^ ".png" in
   let h = Plot.create filename in
   let title = "Truth : " ^ string_of_int (List.nth truths idx) ^ " Pred : " ^ string_of_int (List.nth preds idx) in
   let () = Plot.set_title h title; Plot.image ~h z_t; Plot.output h in
-  html := !html ^ "<div class='row'><img src='"^filename^"'><p>"^title^"</p></div>";
+  html := !html ^ "<div class='row'><img src='"^imgname^"'><p>"^title^"</p></div>";
   demo preds truths (idx+1)
   
 let () = demo preds truths 0 
