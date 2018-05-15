@@ -12,6 +12,7 @@ open Tfnode
 open Tfgraphst
 open Jaynet
 open Jalexnet
+open Mnistnet
 
 
 (* OCaml allows {|...|} as a syntax for strings in which the ...
@@ -86,7 +87,6 @@ Plot.set_pen_size h 3.;
 let () = Plot.plot ~h x y in
 
 Plot.output h;;
-
 
 (* Simple chained graph replicating the above simple graph with chaining *)
 let graph = Graph.empty
