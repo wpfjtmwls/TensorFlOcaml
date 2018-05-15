@@ -38,7 +38,7 @@ module GraphState = struct
   let rec update_state new_st update_st acc = match new_st with
     | [] -> (update_st, acc)
     | (id, new_matrix)::t -> 
-      begin match assoc_opt id update_st with 
+      begin match assoc_opt id update_st with
       | None -> 
         let new_update_st = (id, new_matrix)::update_st in
         let new_acc = id::acc in

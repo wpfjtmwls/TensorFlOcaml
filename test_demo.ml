@@ -52,7 +52,10 @@ let (loss_val, graphst) = Graph.forward loss graph graphst
 let smax_val = GraphState.(graphst |> get_node_by_id "MNISTNET_SOFTMAX_0") 
 let preds = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] smax_val 
 let truths = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] yVal 
-let () = print_endline (string_of_int (List.length preds))
-let () = print_endline (string_of_int (List.length truths))
+let _ = print_endline (string_of_int (List.length preds))
+let _ = print_endline (string_of_int (List.length truths))
 
 (* Plot *)
+
+let x_dsmat = Mat.init 64 1 (fun x -> (float_of_int) (x / 8))
+let y_dsmat = Mat.init 64 1 (fun x -> (float_of_int) (x mod 8))
