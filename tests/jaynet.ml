@@ -18,7 +18,8 @@ module JayNet : SUBGRAPH = struct
         let (h2, graph) = graph |> Graph.matmul ~prefix:name s1 a2 in
         let (s2, graph) = graph |> Graph.sigmoid ~prefix:name h2 in
         let graphstate = GraphState.(graphst
-                        |> add_node a1 (Arr.mul_scalar (Arr.ones [|num_dims;10|]) 0.5)
+                        |> add_node a1 (Arr.mul_scalar 
+                                        (Arr.ones [|num_dims;10|]) 0.5)
                         |> add_node a2 (Arr.(mul_scalar (ones [|10;1|]) 0.5))
         ) in
         (s2, graph, graphstate)

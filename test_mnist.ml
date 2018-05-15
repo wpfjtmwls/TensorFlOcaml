@@ -48,8 +48,10 @@ let get_accuracy_helper xVal yVal graph graphst =
   ) in
   let (loss_val, graphst) = Graph.forward loss graph graphst in
   let smax_val = GraphState.(graphst |> get_node_by_id "MNISTNET_SOFTMAX_0") in
-  let preds = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] smax_val in
-  let truth = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] yVal in
+  let preds = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] smax_val 
+  let preds = List.rev preds
+  let truth = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] yVal 
+  let truth = List.rev truths
   let total = float_of_int (Arr.shape yVal).(0) in
   float_of_int (List.fold_left2 (fun acc i1 i2 -> if i1 = i2 then acc + 1 else acc) 0 preds truth) /. total
 let get_accuracy xValList yValList graph graphst =
