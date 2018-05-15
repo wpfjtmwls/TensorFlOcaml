@@ -559,8 +559,10 @@ let rec forward n gr st =
   let () = match n.log with
   | Some l ->
     (* log value if it is a matrix with one element (loss node usually) *)
+    (try (
     let ar = get_node n st in
     if Arr.shape ar = [|1|] then update_node_log n (Arr.get ar [|0|])
+    ) with _ -> ())
   | None -> () in
   match n.nodetype with
   | Placeholder | Variable -> get_node n st, st
