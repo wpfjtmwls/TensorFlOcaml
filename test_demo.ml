@@ -46,12 +46,12 @@ let (loss, graph, graphst) = MnistNet.create [x;y] (MnistNet.default_name) graph
 let (opt, graph) = graph |> Graph.grad_descent loss 0.01
 
 (* Load graph and graph state files *)
-let graphst = GraphState.load_graphst "tests/saved-graphstates-mnist-iter-1"
+let graphst = GraphState.load_graphst "tests/saved-graphstates-mnist-iter-100"
 
 
 (* Get Preds and Truths *)
 (* Generate a random batch *)
-let () = Random.self_init()
+let () = Random.init 1
 let batch = Random.int (Array.length xtestbatches)
 let xVal , yVal = List.hd (Array.to_list (Array.sub xtestbatches batch 1)), List.hd (Array.to_list (Array.sub ytestbatches batch 1))
 let graphst = GraphState.(graphst
@@ -79,7 +79,8 @@ let rec demo (preds:int list) (truths:int list) (idx:int) : unit =
   let h = Plot.create filename in
   let title = "Truth : " ^ string_of_int (List.nth truths idx) ^ " Pred : " ^ string_of_int (List.nth preds idx) in
   let () = Plot.set_title h title; Plot.image ~h z_t; Plot.output h in
-  html := !html ^ "<div class='row'><center><img src='"^imgname^"' width='200' height='200'><p><font color='red'>"^title^"</font></p></div></center>";
+  let color = if ((List.nth truths idx) = (List.nth preds idx)) then "'white'" else "'red'" in
+  html := !html ^ "<div class='row'><center><img src='"^imgname^"' width='200' height='200'><p><font color="^color^">"^title^"</font></p></div></center>";
   demo preds truths (idx+1)
   
 let () = demo preds truths 0 

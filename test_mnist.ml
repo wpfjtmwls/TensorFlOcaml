@@ -74,10 +74,10 @@ let _ = Printf.printf "Starting loss on training set: %.5f\n" (get_loss xtrainba
 let _ = Printf.printf "Starting loss on test set: %.5f\n" (get_loss xtestbatches.(0) ytestbatches.(0) graph graphst)
 
 (* Training the graph *)
-let (graphst, losslist) = Graph.train opt graph [(x, (Array.to_list xtrainbatches)); (y, (Array.to_list ytrainbatches))] ~max_iter:1 ~delta:0.001 ~log_loss_every_ith:10 graphst
+let (graphst, losslist) = Graph.train opt graph [(x, (Array.to_list xtrainbatches)); (y, (Array.to_list ytrainbatches))] ~max_iter:100 ~delta:0.001 ~log_loss_every_ith:10 graphst
 
 (* let _ = Arr.print ~max_row:10 ~max_col:10 (GraphState.(graphst |> get_node_by_id "MNISTNET_VAR_0")) *)
-let _ = GraphState.save_graphst graphst "tests/saved-graphstates-mnist-iter-1"
+let _ = GraphState.save_graphst graphst "tests/saved-graphstates-mnist-iter-100"
 
 (* Evaluating the graph *)
 let _ = Printf.printf "Ending Accuracy on trg set: %.5f\n" (get_accuracy (Array.sub xtrainbatches 0 10) (Array.sub ytrainbatches 0 10) graph graphst)
