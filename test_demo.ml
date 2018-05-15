@@ -67,7 +67,7 @@ let truths = List.rev truths
 
 (* Plot *)
 
-let html = ref "<html><head><title>MNIST DEMO</title></head><body><div id='rows'><h1 align='center'>CS 3110 TensorFlOcaml MNIST DEMO</h1>"
+let html = ref "<html><head><title>MNIST DEMO</title><style>.row { width: 300px; float: left; }</style></head><body><div id='rows'><h1 align='center'>CS 3110 TensorFlOcaml MNIST DEMO</h1>"
 
 let rec demo (preds:int list) (truths:int list) (idx:int) : unit = 
   if idx <= 31 then 
