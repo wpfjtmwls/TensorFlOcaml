@@ -67,7 +67,7 @@ let truths = List.rev truths
 
 (* Plot *)
 
-let html = ref "<html><head><title>MNIST DEMO</title><style>.row { width: 300px; float: left; }</style></head><body><div id='rows'><h1 align='center'>CS 3110 TensorFlOcaml MNIST DEMO</h1>"
+let html = ref "<html><head><title>MNIST DEMO</title><style>.row { width: 300px; float: left; }</style></head><body style='background-color:black;'><div id='rows'><h1 align='center'><font color='red'>CS 3110 TensorFlOcaml MNIST DEMO</font></h1>"
 
 let rec demo (preds:int list) (truths:int list) (idx:int) : unit = 
   if idx <= 31 then 
@@ -78,7 +78,7 @@ let rec demo (preds:int list) (truths:int list) (idx:int) : unit =
   let h = Plot.create filename in
   let title = "Truth : " ^ string_of_int (List.nth truths idx) ^ " Pred : " ^ string_of_int (List.nth preds idx) in
   let () = Plot.set_title h title; Plot.image ~h z_t; Plot.output h in
-  html := !html ^ "<div class='row'><center><img src='"^imgname^"' width='200' height='200'><p>"^title^"</p></div></center>";
+  html := !html ^ "<div class='row'><center><img src='"^imgname^"' width='200' height='200'><p><font color='white'>"^title^"</font></p></div></center>";
   demo preds truths (idx+1)
   
 let () = demo preds truths 0 
