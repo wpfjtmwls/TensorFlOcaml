@@ -67,7 +67,7 @@ let truths = List.rev truths
 
 (* Plot *)
 
-let html = ref "<html><head></head><body><div id='rows'>"
+let html = ref "<html><head><title>MNIST DEMO</title></head><body><div id='rows'>"
 
 let rec demo (preds:int list) (truths:int list) (idx:int) : unit = 
   if idx <= 31 then 
@@ -78,7 +78,7 @@ let rec demo (preds:int list) (truths:int list) (idx:int) : unit =
   let h = Plot.create filename in
   let title = "Truth : " ^ string_of_int (List.nth truths idx) ^ " Pred : " ^ string_of_int (List.nth preds idx) in
   let () = Plot.set_title h title; Plot.image ~h z_t; Plot.output h in
-  html := !html ^ "<div class='row'><img src='"^imgname^"'><p>"^title^"</p></div>";
+  html := !html ^ "<div class='row'><img src='"^imgname^"' width='200' height='200'><p>"^title^"</p></div>";
   demo preds truths (idx+1)
   
 let () = demo preds truths 0 
