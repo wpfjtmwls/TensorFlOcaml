@@ -52,9 +52,8 @@ let graphst = GraphState.load_graphst "tests/saved-graphstates-mnist-iter-1"
 (* Get Preds and Truths *)
 (* Generate a random batch *)
 let () = Random.self_init()
-let batch = Random.int ((Array.length xtestbatches) - 2)
-let _ = Printf.printf "%i out of %i" batch (Array.length xtestbatches)
-let xVal , yVal = List.hd (Array.to_list (Array.sub xtestbatches batch (batch+1))), List.hd (Array.to_list (Array.sub ytestbatches batch (batch+1)))
+let batch = Random.int (Array.length xtestbatches)
+let xVal , yVal = List.hd (Array.to_list (Array.sub xtestbatches batch 1)), List.hd (Array.to_list (Array.sub ytestbatches batch 1))
 let graphst = GraphState.(graphst
                   |> add_node x (xVal)
                   |> add_node y (yVal)
