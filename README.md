@@ -94,7 +94,6 @@ in utop succsessfully.
 `make clean` to remove binaries
 
 
-
 ## Use
 Now that you've installed Tensorflowcaml, lets get you set up with your own nueral net!
 First you'll want to create a graph and graphstate. You can then fill those with the nodes you want.
@@ -123,6 +122,15 @@ let _ = Printf.printf "Ending loss on test set: %.5f\n" (get_loss xtestbatches.(
 And thats it! In pure Ocaml fashion be sure to look at the example nets, created within the tests folder and the three test files to get a feel 
 for creating nets. We hope you enjoy!!
 
+## Further use reference
+`test.ml` contains a framework to test ur computational graphs
+`test_demo.ml` contains a framework how to load the saved graphstates and graph to neural network and visualize the results through html file
+`test_demo.ml` contains a framework how to train neural network and saving neural network (graph, graphstates) for future use 
+`tf.mli` contains a subgraph module (examples how to construct subgraph are in tests folder as 'AlexNet' and 'JayNet')
+`tfchain.mli` contains a module that chains(connects) multiple subgraphs (example is in tests folder as 'JalexNet')\
+`tfgraph.mli` and `tfgraphst.mli` and `tfnode.ml` have detailed documentations for functions that users can use to construct their own computational graphs
+
+
 ## Tests
 Various tests are contained within the tests folder. 
 Each test (Alexnet, Jaynet, ...) defines a nueral net which you can use in other ml 
@@ -132,3 +140,10 @@ open Alexnet
 ```
 
 Saved graphstates will also deposited in the tests folder. 
+
+## Proof of Concept (Demo)
+We trained a neural network with 60k trained MNIST images (specifics under 'test_mnist.ml') and tested accuracy for 3200 test MNIST images.
+The saved neural network is under 'tests/saved-graphstates-mnist-final'. The detailed guide to replicate the neural network is in 'test_demo.ml'.
+The final testing accuracy was amazingly high of over 99% with training accuracy 100%. 
+For result visualization, `make demo` will randomly generate test data of 32 images and visualize our predictions for those images as single html file.
+The resulting html and images will be saved under 'demos' file as default. 
