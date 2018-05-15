@@ -1,3 +1,6 @@
+(*
+  Simple plot example for using Owl's plotting system.
+*)
 open Owl
 
 let f x = Maths.sin x /. x in

@@ -1,6 +1,7 @@
 # TensorFlOcaml
 
 ## Final Project for CS3110 (Functional Programming) at Cornell
+Our goal was to define a Tensorflow like Api using the OCaml language. Users can use the TensorFlOwcaml api to define their own nueral nets, and train them on specific data. 
 
 ## Dependencies:
 * Ocaml >= 4.06.0
