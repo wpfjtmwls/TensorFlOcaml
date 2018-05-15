@@ -29,7 +29,7 @@ let xtrain = Arr.concat_horizontal xtrain (Arr.ones [|(Arr.shape xtrain).(0);1|]
 let xtest = Arr.concat_horizontal xtest (Arr.ones [|(Arr.shape xtest).(0);1|])
 
 (* Split data in batches of size batchsize *)
-let batchsize = 32
+let batchsize = 160
 let xtrainbatches = Arr.split ~axis:0 (Array.of_list (List.init (60000 / batchsize) (fun _ -> batchsize))) xtrain
 let ytrainbatches = Arr.split ~axis:0 (Array.of_list (List.init (60000 / batchsize) (fun _ -> batchsize))) ytrain
 let trainbatches = List.combine (Array.to_list xtrainbatches) (Array.to_list ytrainbatches)
@@ -46,18 +46,20 @@ let (loss, graph, graphst) = MnistNet.create [x;y] (MnistNet.default_name) graph
 let (opt, graph) = graph |> Graph.grad_descent loss 0.01
 
 (* Load graph and graph state files *)
-let graphst = GraphState.load_graphst "tests/saved-graphstates-mnist-final"
+let graphst = GraphState.load_graphst "tests/saved-graphstates-mnist-iter-1"
 
 
 (* Get Preds and Truths *)
 (* Generate a random batch *)
 let () = Random.self_init()
-let batch = Random.int 40 
+let batch = Random.int ((Array.length xtestbatches) - 2)
+let _ = Printf.printf "%i out of %i" batch (Array.length xtestbatches)
 let xVal , yVal = List.hd (Array.to_list (Array.sub xtestbatches batch (batch+1))), List.hd (Array.to_list (Array.sub ytestbatches batch (batch+1)))
 let graphst = GraphState.(graphst
                   |> add_node x (xVal)
                   |> add_node y (yVal)
   )
+
 let (loss_val, graphst) = Graph.forward loss graph graphst
 let smax_val = GraphState.(graphst |> get_node_by_id "MNISTNET_SOFTMAX_0") 
 let preds = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] smax_val 
@@ -70,7 +72,7 @@ let truths = List.rev truths
 let html = ref "<html><head></head><body>"
 
 let rec demo (preds:int list) (truths:int list) (idx:int) : unit = 
-  if idx <= 31 then 
+  if idx <= (batchsize - 1) then 
   let z_t = Mat.get_slice [[];[0;783]] (Arr.row (xtestplotbatches.(batch)) idx) in
   let z_t = Mat.reshape z_t [|28;28|] in 
   let filename = "demos/mnist_" ^ string_of_int idx ^ ".png" in

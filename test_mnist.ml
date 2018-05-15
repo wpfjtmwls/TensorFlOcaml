@@ -48,10 +48,10 @@ let get_accuracy_helper xVal yVal graph graphst =
   ) in
   let (loss_val, graphst) = Graph.forward loss graph graphst in
   let smax_val = GraphState.(graphst |> get_node_by_id "MNISTNET_SOFTMAX_0") in
-  let preds = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] smax_val 
-  let preds = List.rev preds
-  let truth = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] yVal 
-  let truth = List.rev truths
+  let preds = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] smax_val   in
+  let preds = List.rev preds in
+  let truth = Dense.Matrix.Generic.fold_rows (fun acc row -> let i = (snd (Arr.max_i row)).(1) in i::acc) [] yVal in
+  let truth = List.rev truth in
   let total = float_of_int (Arr.shape yVal).(0) in
   float_of_int (List.fold_left2 (fun acc i1 i2 -> if i1 = i2 then acc + 1 else acc) 0 preds truth) /. total
 let get_accuracy xValList yValList graph graphst =
@@ -74,10 +74,10 @@ let _ = Printf.printf "Starting loss on training set: %.5f\n" (get_loss xtrainba
 let _ = Printf.printf "Starting loss on test set: %.5f\n" (get_loss xtestbatches.(0) ytestbatches.(0) graph graphst)
 
 (* Training the graph *)
-let (graphst, losslist) = Graph.train opt graph [(x, (Array.to_list xtrainbatches)); (y, (Array.to_list ytrainbatches))] ~max_iter:100 ~delta:0.001 ~log_loss_every_ith:10 graphst
+let (graphst, losslist) = Graph.train opt graph [(x, (Array.to_list xtrainbatches)); (y, (Array.to_list ytrainbatches))] ~max_iter:1 ~delta:0.001 ~log_loss_every_ith:10 graphst
 
 (* let _ = Arr.print ~max_row:10 ~max_col:10 (GraphState.(graphst |> get_node_by_id "MNISTNET_VAR_0")) *)
-let _ = GraphState.save_graphst graphst "tests/saved-graphstates-mnist"
+let _ = GraphState.save_graphst graphst "tests/saved-graphstates-mnist-iter-1"
 
 (* Evaluating the graph *)
 let _ = Printf.printf "Ending Accuracy on trg set: %.5f\n" (get_accuracy (Array.sub xtrainbatches 0 10) (Array.sub ytrainbatches 0 10) graph graphst)
