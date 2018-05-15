@@ -85,3 +85,7 @@ in utop succsessfully.
 9. You made it! You're ready to get started with TensorFlowcaml
 
 ## Use
+
+
+## Tests
+Various tests are contained within the tests folder. 
