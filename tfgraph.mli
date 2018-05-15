@@ -1,3 +1,8 @@
+(*
+  Defines the actual computational graph object, and operations
+  that act on the graph as a whole, such as load, forward, 
+  backwards, etc. 
+*)
 open Owl
 open Tfgraphst
 open Tfnode

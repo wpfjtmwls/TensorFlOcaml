@@ -1,3 +1,6 @@
+(*
+ Describes the state of the computational graph. 
+*)
 open Owl
 open Tfnode
 

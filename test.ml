@@ -1,3 +1,10 @@
+(*
+  "Basic" test for people wanting to create their own nueral net
+  and train it on a certain type of data. 
+
+  The file uses various nueral nets defined within the "tests" folder.
+  These nets are described within their respective ".ml" files. 
+*)
 open OUnit2
 open Owl
 open Tfgraph

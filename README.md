@@ -1,6 +1,7 @@
 # TensorFlOcaml
 
 ## Final Project for CS3110 (Functional Programming) at Cornell
+Our goal was to define a Tensorflow like Api using the OCaml language. Users can use the TensorFlOwcaml api to define their own nueral nets, and train them on specific data. 
 
 ## Dependencies:
 * Ocaml >= 4.06.0
@@ -95,3 +96,39 @@ in utop succsessfully.
 
 
 ## Use
+Now that you've installed Tensorflowcaml, lets get you set up with your own nueral net!
+First you'll want to create a graph and graphstate. You can then fill those with the nodes you want.
+An example from "test_mnist" is 
+```ocaml
+let graph = Graph.empty
+let graphst = GraphState.empty
+let (x, graph) = graph |> Graph.placeholder (Array.to_list (Dense.Ndarray.Generic.shape xtrainbatches.(0)))
+let (y, graph) = graph |> Graph.placeholder (Array.to_list (Dense.Ndarray.Generic.shape ytrainbatches.(0)))
+let (loss, graph, graphst) = MnistNet.create [x;y] (MnistNet.default_name) graph graphst
+let (opt, graph) = graph |> Graph.grad_descent loss 0.01
+```
+After creating the computational graph you can train it!
+```ocaml
+let (graphst, losslist) = Graph.train opt graph [(x, (Array.to_list xtrainbatches)); (y, (Array.to_list ytrainbatches))] ~max_iter:100 ~delta:0.001 ~log_loss_every_ith:10 graphst
+```
+To print how your net performs, lets print some stats
+
+```ocaml
+let _ = Printf.printf "Ending Accuracy on trg set: %.5f\n" (get_accuracy (Array.sub xtrainbatches 0 10) (Array.sub ytrainbatches 0 10) graph graphst)
+let _ = Printf.printf "Ending Accuracy on test set: %.5f\n" (get_accuracy (Array.sub xtestbatches 0 10) (Array.sub ytestbatches 0 10) graph graphst)
+let _ = Printf.printf "Ending loss on training set: %.5f\n" (get_loss xtrainbatches.(0) ytrainbatches.(0) graph graphst)
+let _ = Printf.printf "Ending loss on test set: %.5f\n" (get_loss xtestbatches.(0) ytestbatches.(0) graph graphst)
+```
+
+And thats it! In pure Ocaml fashion be sure to look at the example nets, created within the tests folder and the three test files to get a feel 
+for creating nets. We hope you enjoy!!
+
+## Tests
+Various tests are contained within the tests folder. 
+Each test (Alexnet, Jaynet, ...) defines a nueral net which you can use in other ml 
+files or tests with 
+```ocaml
+open Alexnet 
+```
+
+Saved graphstates will also deposited in the tests folder. 

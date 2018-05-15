@@ -1,3 +1,8 @@
+(*
+  Defines definition for a subgraph. Allows the user to build a computational 
+  graph from a list of inputs which are represented by a node list.
+  The graph is created under the specified namespace.  
+*)
 open Tfnode
 open Tfgraph
 open Tfgraphst
