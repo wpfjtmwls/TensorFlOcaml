@@ -85,8 +85,11 @@ in utop succsessfully.
 
 ## Compilation (Makefile):
 `make test` to compile and then run test.ml
+
 `make check` to run checktypes.sh
+
 `make zip` to archive the binaries
+
 `make clean` to remove binaries
 
 ## Use
