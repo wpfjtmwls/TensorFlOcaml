@@ -208,12 +208,6 @@ let rec make_graph ln_lst acc_nc acc_ol acc_nm acc_params =
     let new_params = ln.load_params @ acc_params in
     make_graph t new_nc new_ol new_nm new_params
 
-(* Preprocessing helper function for [load] converts the path to json and parse *)
-let load path = 
-  let json = Yojson.Basic.from_file path in
-  let ln_lst = load_nodes json in
-  make_graph ln_lst [] [] [] []
-
 (* Helper function. Converts nodetype and nodecounts to id and new nodecounts.
  * If prefix is set, the id will be prefixed by the prefix followed *)
 let gen_id nt ?(prefix="") (nc:node_counts) =
@@ -369,7 +363,13 @@ let broadcast n1 n2 ?(prefix="") ?(logger=None) gr =
     let ns = nodes_in_save_order gr.ol in
     let json : Yojson.json = `Assoc [("graph", `List (List.map to_json_node ns))] in
     Yojson.to_file (path ^ ".tfgraph") json
-    
+
+    (* Preprocessing helper function for [load] converts the path to json and parse *)
+  let load path = 
+    let json = Yojson.Basic.from_file path in
+    let ln_lst = load_nodes json in
+    make_graph ln_lst [] [] [] []
+      
 (* ------------ Node Creation --------------- *)
 
 let variable dims ?(prefix="") ?(logger=None) gr =

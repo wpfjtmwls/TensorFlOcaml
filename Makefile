@@ -4,6 +4,9 @@ test:
 test-mnist:
 	ocamlbuild -use-ocamlfind -I tests test_mnist.byte && ./test_mnist.byte
 
+demo:
+	ocamlbuild -use-ocamlfind -I tests test_demo.byte && ./test_demo.byte
+
 check:
 	bash checktypes.sh
 
