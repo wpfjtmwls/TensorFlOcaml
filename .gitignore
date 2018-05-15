@@ -14,3 +14,4 @@ tings.json
 mnist_images/*
 *.png
 *.html
+*.DS_Store
