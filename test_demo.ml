@@ -82,7 +82,7 @@ let rec demo (preds:int list) (truths:int list) (idx:int) : unit =
   
 let () = demo preds truths 0 
   
-let file = open_out "demo.html"
+let file = open_out "demos/demo.html"
 
 let () = html := !html ^ "</body></html>"
 
