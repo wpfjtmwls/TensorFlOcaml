@@ -34,7 +34,7 @@ module MnistNet : SUBGRAPH = struct
         let (h3b, graph)= graph |> Graph.add ~prefix:name h3 b3 in
         let (smax, graph) = graph |> Graph.softmax ~prefix:name h3b in
         let logger = Some {filename="mnist-loss.log"; interval=10; counter=ref 0} in
-        let (loss, graph) = graph |> Graph.squared_loss ~prefix:name ~logger:logger smax labels in
+        let (loss, graph) = graph |> Graph.crossentropyloss ~prefix:name ~logger:logger smax labels in
         let graphstate = GraphState.(graphst    
                         |> add_node a1 (get_init n_dims 300)
                         |> add_node a2 (get_init 300 100)
