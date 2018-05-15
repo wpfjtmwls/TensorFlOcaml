@@ -50,7 +50,10 @@ let graphst = GraphState.load_graphst "tests/saved-graphstates-mnist-final"
 
 
 (* Get Preds and Truths *)
-let xVal , yVal = List.hd (Array.to_list (Array.sub xtestbatches 0 1)), List.hd (Array.to_list (Array.sub ytestbatches 0 1))
+(* Generate a random batch *)
+let () = Random.self_init()
+let batch = Random.int 40 
+let xVal , yVal = List.hd (Array.to_list (Array.sub xtestbatches batch (batch+1))), List.hd (Array.to_list (Array.sub ytestbatches batch (batch+1)))
 let graphst = GraphState.(graphst
                   |> add_node x (xVal)
                   |> add_node y (yVal)
@@ -68,7 +71,7 @@ let html = ref "<html><head></head><body>"
 
 let rec demo (preds:int list) (truths:int list) (idx:int) : unit = 
   if idx <= 31 then 
-  let z_t = Mat.get_slice [[];[0;783]] (Arr.row (xtestplotbatches.(0)) idx) in
+  let z_t = Mat.get_slice [[];[0;783]] (Arr.row (xtestplotbatches.(batch)) idx) in
   let z_t = Mat.reshape z_t [|28;28|] in 
   let filename = "demos/mnist_" ^ string_of_int idx ^ ".png" in
   let h = Plot.create filename in
