@@ -12,5 +12,3 @@ _build/*
 tings.json
 .vscode
 mnist_images/*
-*.png
-*.html

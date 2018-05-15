@@ -69,25 +69,24 @@ let truths = List.rev truths
 
 (* Plot *)
 
-let html = ref "<html><head></head><body>"
+let html = ref "<html><head><title>MNIST DEMO</title><style>.row { width: 300px; float: left; }</style></head><body style='background-color:black;'><div id='rows'><h1 align='center'><font color='red'>CS 3110 TensorFlOcaml MNIST DEMO</font></h1>"
 
 let rec demo (preds:int list) (truths:int list) (idx:int) : unit = 
   if idx <= (batchsize - 1) then 
   let z_t = Mat.get_slice [[];[0;783]] (Arr.row (xtestplotbatches.(batch)) idx) in
   let z_t = Mat.reshape z_t [|28;28|] in 
   let filename = "demos/mnist_" ^ string_of_int idx ^ ".png" in
+  let imgname = "mnist_" ^ string_of_int idx ^ ".png" in
   let h = Plot.create filename in
   let title = "Truth : " ^ string_of_int (List.nth truths idx) ^ " Pred : " ^ string_of_int (List.nth preds idx) in
   let () = Plot.set_title h title; Plot.image ~h z_t; Plot.output h in
-  html := !html ^ "<img src='"^filename^"'><br><p>"^title^"</p>";
+  html := !html ^ "<div class='row'><center><img src='"^imgname^"' width='200' height='200'><p><font color='white'>"^title^"</font></p></div></center>";
   demo preds truths (idx+1)
   
 let () = demo preds truths 0 
   
 let file = open_out "demos/demo.html"
 
-let () = html := !html ^ "</body></html>"
+let () = html := !html ^ "</div></body></html>"
 
 let () = fprintf file "%s\n" !html; close_out file
-
-  
